@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CropConnect.ApiService\CropConnect.ApiService.csproj" />
+    <ProjectReference Include="..\CropConnect.ApiGateway\CropConnect.ApiService.csproj" />
     <ProjectReference Include="..\CropConnect.Web\CropConnect.Web.csproj" />
   </ItemGroup>
 
