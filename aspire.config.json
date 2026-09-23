@@ -1,0 +1,5 @@
+{
+  "appHost": {
+    "path": "CropConnect.AppHost/CropConnect.AppHost.csproj"
+  }
+}

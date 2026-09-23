@@ -1,0 +1,99 @@
+# =========================
+# Visual Studio
+# =========================
+
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# =========================
+# .NET
+# =========================
+
+bin/
+obj/
+
+# Test results
+TestResults/
+*.trx
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+
+# =========================
+# ASP.NET / .NET
+# =========================
+
+# Local development settings
+appsettings.Local.json
+
+# User secrets
+secrets.json
+
+# =========================
+# Logs
+# =========================
+
+*.log
+logs/
+
+# =========================
+# OS
+# =========================
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# =========================
+# IDEs
+# =========================
+
+.idea/
+.vscode/
+
+# =========================
+# Docker
+# =========================
+
+*.pid
+docker-compose.override.yml
+
+# =========================
+# Node.js / Node-RED
+# =========================
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Node-RED runtime files
+node-red/.config.nodes.json
+node-red/flows_cred.json
+node-red/*.backup
+
+# =========================
+# Environment variables
+# =========================
+
+.env
+.env.*
+!.env.example
+
+# =========================
+# Coverage
+# =========================
+
+coverage/
+.coverage/
+*.coverage
+*.coveragexml
