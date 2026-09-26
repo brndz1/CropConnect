@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Auth.Service.Data;
+using Auth.Service.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,9 @@ builder.Services.AddGrpc();
 
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("AuthDb")));
+
+builder.Services.AddScoped<JwtTokenGenerator>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
