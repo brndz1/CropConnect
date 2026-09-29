@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+option csharp_namespace = "Users.Service.Protos";
+
+package users;
+
+service UsersService {
+  rpc GetUserProfile (GetUserProfileRequest) returns (UserProfileResponse);
+  rpc CreateUserProfile (CreateUserProfileRequest) returns (UserProfileResponse);
+  rpc UpdateUserProfile (UpdateUserProfileRequest) returns (UserProfileResponse);
+}
+
+message GetUserProfileRequest {
+  string id = 1;
+}
+
+message CreateUserProfileRequest {
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string phone_number = 4;
+}
+
+message UpdateUserProfileRequest {
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string phone_number = 4;
+  string farm_id = 5;
+}
+
+message UserProfileResponse {
+  bool success = 1;
+  string message = 2;
+  string id = 3;
+  string first_name = 4;
+  string last_name = 5;
+  string phone_number = 6;
+  string farm_id = 7;
+}
