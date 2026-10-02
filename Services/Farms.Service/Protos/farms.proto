@@ -1,0 +1,203 @@
+syntax = "proto3";
+
+option csharp_namespace = "Farms.Service.Protos";
+
+package farms.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service FarmsService {
+  rpc CreateFarm (CreateFarmRequest) returns (FarmInfo);
+  rpc GetFarm (GetFarmRequest) returns (FarmInfo);
+  rpc ListFarms (ListFarmsRequest) returns (ListFarmsResponse);
+  rpc ListMyFarms (ListMyFarmsRequest) returns (ListFarmsResponse);
+  rpc UpdateFarm (UpdateFarmRequest) returns (FarmInfo);
+  rpc SetFarmActive (SetFarmActiveRequest) returns (FarmInfo);
+  rpc DeleteFarm (DeleteFarmRequest) returns (google.protobuf.Empty);
+}
+
+service ProductsService {
+  rpc CreateProduct (CreateProductRequest) returns (ProductInfo);
+  rpc GetProduct (GetProductRequest) returns (ProductInfo);
+  rpc ListProducts (ListProductsRequest) returns (ListProductsResponse);
+  rpc UpdateProduct (UpdateProductRequest) returns (ProductInfo);
+  rpc AdjustStock (AdjustStockRequest) returns (ProductInfo);
+  rpc DeleteProduct (DeleteProductRequest) returns (google.protobuf.Empty);
+}
+
+service StockService {
+  rpc ReserveStock (ReserveStockRequest) returns (StockReservationResponse);
+  rpc ConfirmStock (ConfirmStockRequest) returns (StockReservationResponse);
+  rpc ReleaseStock (ReleaseStockRequest) returns (StockReservationResponse);
+}
+
+message DecimalValue {
+  int64 units = 1;
+  sfixed32 nanos = 2;
+}
+
+message FarmInfo {
+  string id = 1;
+  string owner_id = 2;
+  string name = 3;
+  string description = 4;
+  string location = 5;
+  bool is_active = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  int32 version = 9;
+}
+
+message CreateFarmRequest {
+  string name = 1;
+  string description = 2;
+  string location = 3;
+}
+
+message GetFarmRequest {
+  string id = 1;
+}
+
+message ListFarmsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  bool include_inactive = 3;
+  optional string search = 4;
+  optional string owner_id = 5;
+}
+
+message ListMyFarmsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message ListFarmsResponse {
+  repeated FarmInfo farms = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message UpdateFarmRequest {
+  string id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional string location = 4;
+  optional int32 expected_version = 5;
+}
+
+message SetFarmActiveRequest {
+  string id = 1;
+  bool is_active = 2;
+}
+
+message DeleteFarmRequest {
+  string id = 1;
+}
+
+message ProductInfo {
+  string id = 1;
+  string farm_id = 2;
+  string farm_name = 3;
+  string name = 4;
+  string description = 5;
+  string unit = 6;
+  DecimalValue price = 7;
+  int32 stock_quantity = 8;
+  bool is_available = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+  int32 version = 12;
+}
+
+message CreateProductRequest {
+  string farm_id = 1;
+  string name = 2;
+  string description = 3;
+  string unit = 4;
+  DecimalValue price = 5;
+  int32 stock_quantity = 6;
+}
+
+message GetProductRequest {
+  string id = 1;
+}
+
+message ListProductsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  optional string farm_id = 3;
+  optional string search = 4;
+  bool only_in_stock = 5;
+  bool include_unavailable = 6;
+}
+
+message ListProductsResponse {
+  repeated ProductInfo products = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message UpdateProductRequest {
+  string id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional string unit = 4;
+  DecimalValue price = 5;
+  optional bool is_available = 6;
+  optional int32 expected_version = 7;
+}
+
+message AdjustStockRequest {
+  string id = 1;
+  int32 delta = 2;
+}
+
+message DeleteProductRequest {
+  string id = 1;
+}
+
+enum ReservationState {
+  RESERVATION_STATE_UNSPECIFIED = 0;
+  RESERVATION_STATE_RESERVED = 1;
+  RESERVATION_STATE_CONFIRMED = 2;
+  RESERVATION_STATE_RELEASED = 3;
+  RESERVATION_STATE_EXPIRED = 4;
+}
+
+message StockItem {
+  string product_id = 1;
+  int32 quantity = 2;
+}
+
+message ReservedItem {
+  string product_id = 1;
+  string product_name = 2;
+  string farm_id = 3;
+  string farm_owner_id = 4;
+  int32 quantity = 5;
+  DecimalValue unit_price = 6;
+}
+
+message ReserveStockRequest {
+  string order_id = 1;
+  repeated StockItem items = 2;
+}
+
+message ConfirmStockRequest {
+  string order_id = 1;
+}
+
+message ReleaseStockRequest {
+  string order_id = 1;
+}
+
+message StockReservationResponse {
+  string order_id = 1;
+  ReservationState state = 2;
+  google.protobuf.Timestamp expires_at = 3;
+  bool already_processed = 4;
+  repeated ReservedItem items = 5;
+}
