@@ -17,6 +17,14 @@ service FarmsService {
   rpc DeleteFarm (DeleteFarmRequest) returns (google.protobuf.Empty);
 }
 
+service PickupSchedulesService {
+  rpc CreatePickupSchedule (CreatePickupScheduleRequest) returns (PickupScheduleInfo);
+  rpc GetPickupSchedule (GetPickupScheduleRequest) returns (PickupScheduleInfo);
+  rpc ListPickupSchedules (ListPickupSchedulesRequest) returns (ListPickupSchedulesResponse);
+  rpc UpdatePickupSchedule (UpdatePickupScheduleRequest) returns (PickupScheduleInfo);
+  rpc DeletePickupSchedule (DeletePickupScheduleRequest) returns (google.protobuf.Empty);
+}
+
 service ProductsService {
   rpc CreateProduct (CreateProductRequest) returns (ProductInfo);
   rpc GetProduct (GetProductRequest) returns (ProductInfo);
@@ -30,6 +38,17 @@ service StockService {
   rpc ReserveStock (ReserveStockRequest) returns (StockReservationResponse);
   rpc ConfirmStock (ConfirmStockRequest) returns (StockReservationResponse);
   rpc ReleaseStock (ReleaseStockRequest) returns (StockReservationResponse);
+}
+
+enum DayOfWeek {
+  DAY_OF_WEEK_UNSPECIFIED = 0;
+  DAY_OF_WEEK_SUNDAY = 1;
+  DAY_OF_WEEK_MONDAY = 2;
+  DAY_OF_WEEK_TUESDAY = 3;
+  DAY_OF_WEEK_WEDNESDAY = 4;
+  DAY_OF_WEEK_THURSDAY = 5;
+  DAY_OF_WEEK_FRIDAY = 6;
+  DAY_OF_WEEK_SATURDAY = 7;
 }
 
 message DecimalValue {
@@ -47,6 +66,7 @@ message FarmInfo {
   google.protobuf.Timestamp created_at = 7;
   google.protobuf.Timestamp updated_at = 8;
   int32 version = 9;
+  repeated PickupScheduleInfo pickup_schedules = 10;
 }
 
 message CreateFarmRequest {
@@ -213,4 +233,46 @@ message StockReservationResponse {
   google.protobuf.Timestamp expires_at = 3;
   bool already_processed = 4;
   repeated ReservedItem items = 5;
+}
+
+message PickupScheduleInfo {
+  string id = 1;
+  string farm_id = 2;
+  DayOfWeek day_of_week = 3;
+  string open_time = 4;
+  string close_time = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  int32 version = 8;
+}
+
+message CreatePickupScheduleRequest {
+  string farm_id = 1;
+  DayOfWeek day_of_week = 2;
+  string open_time = 3;
+  string close_time = 4;
+}
+
+message GetPickupScheduleRequest {
+  string id = 1;
+}
+
+message ListPickupSchedulesRequest {
+  string farm_id = 1;
+}
+
+message ListPickupSchedulesResponse {
+  repeated PickupScheduleInfo schedules = 1;
+}
+
+message UpdatePickupScheduleRequest {
+  string id = 1;
+  optional DayOfWeek day_of_week = 2;
+  optional string open_time = 3;
+  optional string close_time = 4;
+  optional int32 expected_version = 5;
+}
+
+message DeletePickupScheduleRequest {
+  string id = 1;
 }

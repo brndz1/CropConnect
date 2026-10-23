@@ -31,6 +31,7 @@ app.UseAuthorization();
 #region Endpoints
 
 app.MapGrpcService<FarmsGrpcService>();
+app.MapGrpcService<PickupSchedulesGrpcService>();
 app.MapGrpcService<ProductsGrpcService>();
 app.MapGrpcService<StockGrpcService>();
 app.MapDefaultEndpoints();

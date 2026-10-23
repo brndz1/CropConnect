@@ -221,6 +221,14 @@ public sealed class FarmApplicationService : IFarmApplicationService
                     .SetProperty(p => p.UpdatedAt, updatedAt),
                 cancellationToken);
 
+        await _dbContext.PickupSchedules
+            .Where(s => s.FarmId == farmId && !s.IsDeleted)
+            .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(s => s.IsDeleted, true)
+                    .SetProperty(s => s.Version, s => s.Version + 1)
+                    .SetProperty(s => s.UpdatedAt, updatedAt),
+                cancellationToken);
+
         farm.Delete(now);
 
         await _dbContext.SaveChangesOrConflictAsync(farm, cancellationToken);

@@ -60,6 +60,7 @@ public static class DependencyInjection
 
         services.AddScoped<IFarmApplicationService, FarmApplicationService>();
         services.AddScoped<IProductApplicationService, ProductApplicationService>();
+        services.AddScoped<IPickupScheduleApplicationService, PickupScheduleApplicationService>();
         services.AddScoped<IStockApplicationService, StockApplicationService>();
         services.AddHostedService<ReservationExpiryWorker>();
 

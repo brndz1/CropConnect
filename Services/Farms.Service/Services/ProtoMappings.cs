@@ -28,6 +28,11 @@ public static class ProtoMappings
             info.UpdatedAt = updatedAt.ToTimestamp();
         }
 
+        if (farm.PickupSchedules.Count > 0)
+        {
+            info.PickupSchedules.AddRange(farm.PickupSchedules.Select(s => s.ToProto()));
+        }
+
         return info;
     }
 
@@ -43,6 +48,62 @@ public static class ProtoMappings
         response.Farms.AddRange(page.Items.Select(farm => farm.ToProto()));
         return response;
     }
+
+    #endregion
+
+    #region Pickup Schedules
+
+    public static PickupScheduleInfo ToProto(this PickupSchedule schedule)
+    {
+        var info = new PickupScheduleInfo
+        {
+            Id = schedule.Id.ToString(),
+            FarmId = schedule.FarmId.ToString(),
+            DayOfWeek = schedule.DayOfWeek.ToProto(),
+            OpenTime = schedule.OpenTime.ToString("HH:mm"),
+            CloseTime = schedule.CloseTime.ToString("HH:mm"),
+            Version = schedule.Version,
+            CreatedAt = schedule.CreatedAt.ToTimestamp()
+        };
+
+        if (schedule.UpdatedAt is { } updatedAt)
+        {
+            info.UpdatedAt = updatedAt.ToTimestamp();
+        }
+
+        return info;
+    }
+
+    public static ListPickupSchedulesResponse ToProto(this IEnumerable<PickupSchedule> schedules)
+    {
+        var response = new ListPickupSchedulesResponse();
+        response.Schedules.AddRange(schedules.Select(s => s.ToProto()));
+        return response;
+    }
+
+    public static Protos.DayOfWeek ToProto(this System.DayOfWeek dayOfWeek) => dayOfWeek switch
+    {
+        System.DayOfWeek.Sunday => Protos.DayOfWeek.Sunday,
+        System.DayOfWeek.Monday => Protos.DayOfWeek.Monday,
+        System.DayOfWeek.Tuesday => Protos.DayOfWeek.Tuesday,
+        System.DayOfWeek.Wednesday => Protos.DayOfWeek.Wednesday,
+        System.DayOfWeek.Thursday => Protos.DayOfWeek.Thursday,
+        System.DayOfWeek.Friday => Protos.DayOfWeek.Friday,
+        System.DayOfWeek.Saturday => Protos.DayOfWeek.Saturday,
+        _ => Protos.DayOfWeek.Unspecified
+    };
+
+    public static System.DayOfWeek ToDomain(this Protos.DayOfWeek dayOfWeek) => dayOfWeek switch
+    {
+        Protos.DayOfWeek.Sunday => System.DayOfWeek.Sunday,
+        Protos.DayOfWeek.Monday => System.DayOfWeek.Monday,
+        Protos.DayOfWeek.Tuesday => System.DayOfWeek.Tuesday,
+        Protos.DayOfWeek.Wednesday => System.DayOfWeek.Wednesday,
+        Protos.DayOfWeek.Thursday => System.DayOfWeek.Thursday,
+        Protos.DayOfWeek.Friday => System.DayOfWeek.Friday,
+        Protos.DayOfWeek.Saturday => System.DayOfWeek.Saturday,
+        _ => throw new InvalidInputException("A valid day of week must be specified.")
+    };
 
     #endregion
 

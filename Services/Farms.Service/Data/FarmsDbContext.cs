@@ -13,6 +13,8 @@ public class FarmsDbContext : DbContext
 
     public DbSet<Product> Products => Set<Product>();
 
+    public DbSet<PickupSchedule> PickupSchedules => Set<PickupSchedule>();
+
     public DbSet<StockReservation> StockReservations => Set<StockReservation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

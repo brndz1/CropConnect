@@ -16,6 +16,9 @@ public class Farm : VersionedEntity
 
     public bool IsActive { get; private set; }
 
+    private readonly List<PickupSchedule> _pickupSchedules = [];
+    public IReadOnlyCollection<PickupSchedule> PickupSchedules => _pickupSchedules.AsReadOnly();
+
     public override string EntityName => "farm";
 
     #endregion

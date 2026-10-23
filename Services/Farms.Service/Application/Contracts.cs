@@ -41,6 +41,19 @@ public sealed record ProductQuery(
     bool IncludeUnavailable,
     ProductType? Type = null);
 
+public sealed record CreatePickupScheduleCommand(
+    Guid FarmId,
+    DayOfWeek DayOfWeek,
+    TimeOnly OpenTime,
+    TimeOnly CloseTime);
+
+public sealed record UpdatePickupScheduleCommand(
+    Guid ScheduleId,
+    DayOfWeek? DayOfWeek,
+    TimeOnly? OpenTime,
+    TimeOnly? CloseTime,
+    int? ExpectedVersion);
+
 public sealed record StockLine(Guid ProductId, int Quantity);
 
 public sealed record ReserveStockCommand(Guid OrderId, IReadOnlyList<StockLine> Lines);
