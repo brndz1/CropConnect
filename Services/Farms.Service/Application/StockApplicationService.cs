@@ -297,6 +297,8 @@ public sealed class StockApplicationService : IStockApplicationService
             .Where(p => ids.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id, cancellationToken);
 
+        var now = Now;
+
         foreach (var productId in ids)
         {
             if (!products.TryGetValue(productId, out var product) || product.IsDeleted || product.Farm.IsDeleted)
@@ -308,6 +310,17 @@ public sealed class StockApplicationService : IStockApplicationService
             {
                 throw new BusinessRuleException($"Product '{product.Name}' is not available.");
             }
+
+            if (product.IsExpired(now))
+            {
+                throw new BusinessRuleException($"Seasonal basket '{product.Name}' has expired.");
+            }
+        }
+
+        var distinctFarmIds = products.Values.Select(p => p.FarmId).Distinct().ToList();
+        if (distinctFarmIds.Count > 1)
+        {
+            throw new BusinessRuleException("All products in an order must belong to the same farm.");
         }
 
         return products;

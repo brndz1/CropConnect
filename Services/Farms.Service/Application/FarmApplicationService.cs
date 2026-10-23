@@ -199,6 +199,14 @@ public sealed class FarmApplicationService : IFarmApplicationService
 
         caller.EnsureCanManage(farm);
 
+        var hasActiveReservations = await _dbContext.StockReservations
+            .AnyAsync(r => r.Product.FarmId == farmId && (r.Status == ReservationStatus.Reserved || r.Status == ReservationStatus.Confirmed), cancellationToken);
+
+        if (hasActiveReservations)
+        {
+            throw new BusinessRuleException("Cannot delete a farm with active stock reservations.");
+        }
+
         var now = Now;
         DateTime? updatedAt = now;
 
@@ -227,13 +235,11 @@ public sealed class FarmApplicationService : IFarmApplicationService
 
     private async Task EnsureNameAvailableAsync(Guid ownerId, string name, Guid? exceptFarmId, CancellationToken cancellationToken)
     {
-        var normalizedName = name.ToLowerInvariant();
-
         var nameInUse = await _dbContext.Farms.AnyAsync(
             f => f.OwnerId == ownerId
                  && !f.IsDeleted
                  && f.Id != exceptFarmId
-                 && f.Name.ToLower() == normalizedName,
+                 && EF.Functions.ILike(f.Name, name),
             cancellationToken);
 
         if (nameInUse)
