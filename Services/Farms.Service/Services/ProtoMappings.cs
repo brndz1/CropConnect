@@ -61,6 +61,7 @@ public static class ProtoMappings
             Price = product.Price.ToDecimalValue(),
             StockQuantity = product.StockQuantity,
             IsAvailable = product.IsAvailable,
+            Type = product.Type.ToProto(),
             Version = product.Version,
             CreatedAt = product.CreatedAt.ToTimestamp()
         };
@@ -70,8 +71,28 @@ public static class ProtoMappings
             info.UpdatedAt = updatedAt.ToTimestamp();
         }
 
+        if (product.AvailableUntil is { } availableUntil)
+        {
+            info.AvailableUntil = availableUntil.ToTimestamp();
+        }
+
         return info;
     }
+
+    public static Protos.ProductType ToProto(this Models.ProductType type) => type switch
+    {
+        Models.ProductType.Product => Protos.ProductType.Product,
+        Models.ProductType.PreDefinedBasket => Protos.ProductType.PreDefinedBasket,
+        Models.ProductType.SurpriseBasket => Protos.ProductType.SurpriseBasket,
+        _ => Protos.ProductType.Unspecified
+    };
+
+    public static Models.ProductType ToDomain(this Protos.ProductType type) => type switch
+    {
+        Protos.ProductType.PreDefinedBasket => Models.ProductType.PreDefinedBasket,
+        Protos.ProductType.SurpriseBasket => Models.ProductType.SurpriseBasket,
+        _ => Models.ProductType.Product
+    };
 
     public static ListProductsResponse ToProto(this PagedResult<Product> page)
     {

@@ -23,7 +23,15 @@ public class Product : VersionedEntity
 
     public bool IsAvailable { get; private set; }
 
+    public ProductType Type { get; private set; } = ProductType.Product;
+
+    public DateTime? AvailableUntil { get; private set; }
+
     public override string EntityName => "product";
+
+    public bool IsBasket => Type is ProductType.PreDefinedBasket or ProductType.SurpriseBasket;
+
+    public bool IsExpired(DateTime now) => IsBasket && AvailableUntil.HasValue && AvailableUntil.Value <= now;
 
     public bool IsVisibleInCatalog => !IsDeleted && IsAvailable && Farm is { IsActive: true, IsDeleted: false };
 
@@ -38,11 +46,40 @@ public class Product : VersionedEntity
         string? unit,
         decimal price,
         int stockQuantity,
+        ProductType type,
+        DateTime? availableUntil,
         DateTime now)
     {
         if (farm.IsDeleted || !farm.IsActive)
         {
             throw new BusinessRuleException("Products can only be added to an active farm.");
+        }
+
+        if (!Enum.IsDefined(type))
+        {
+            throw new InvalidInputException("Invalid product type.");
+        }
+
+        var isBasket = type is ProductType.PreDefinedBasket or ProductType.SurpriseBasket;
+
+        if (isBasket)
+        {
+            if (availableUntil is null)
+            {
+                throw new InvalidInputException("Available until date is required for seasonal baskets.");
+            }
+
+            if (availableUntil.Value <= now)
+            {
+                throw new InvalidInputException("Available until date must be in the future.");
+            }
+        }
+        else
+        {
+            if (availableUntil is not null)
+            {
+                throw new InvalidInputException("Available until date can only be specified for seasonal baskets.");
+            }
         }
 
         var product = new Product
@@ -54,6 +91,8 @@ public class Product : VersionedEntity
             Unit = string.IsNullOrWhiteSpace(unit) ? DefaultUnit : Guard.Required(unit, "Unit", FieldLimits.UnitMaxLength),
             Price = Guard.Price(price),
             StockQuantity = Guard.NonNegative(stockQuantity, "Stock quantity"),
+            Type = type,
+            AvailableUntil = availableUntil.HasValue ? DateTime.SpecifyKind(availableUntil.Value, DateTimeKind.Utc) : null,
             IsAvailable = true
         };
 
@@ -65,12 +104,32 @@ public class Product : VersionedEntity
 
     #region Behaviour
 
-    public void Update(string? name, string? description, string? unit, decimal? price, bool? isAvailable, DateTime now)
+    public void Update(
+        string? name,
+        string? description,
+        string? unit,
+        decimal? price,
+        bool? isAvailable,
+        DateTime? availableUntil,
+        DateTime now)
     {
         var newName = name is null ? Name : Guard.Required(name, "Name", FieldLimits.NameMaxLength);
         var newDescription = description is null ? Description : Guard.Optional(description, "Description", FieldLimits.DescriptionMaxLength);
         var newUnit = unit is null ? Unit : Guard.Required(unit, "Unit", FieldLimits.UnitMaxLength);
         var newPrice = price is null ? Price : Guard.Price(price.Value);
+
+        if (availableUntil is not null)
+        {
+            if (!IsBasket)
+            {
+                throw new BusinessRuleException("Available until date can only be specified for seasonal baskets.");
+            }
+
+            if (availableUntil.Value <= now)
+            {
+                throw new InvalidInputException("Available until date must be in the future.");
+            }
+        }
 
         Touch(now);
         Name = newName;
@@ -78,6 +137,11 @@ public class Product : VersionedEntity
         Unit = newUnit;
         Price = newPrice;
         IsAvailable = isAvailable ?? IsAvailable;
+
+        if (availableUntil.HasValue)
+        {
+            AvailableUntil = DateTime.SpecifyKind(availableUntil.Value, DateTimeKind.Utc);
+        }
     }
 
     public void Delete(DateTime now)

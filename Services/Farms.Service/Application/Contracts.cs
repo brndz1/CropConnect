@@ -19,7 +19,9 @@ public sealed record CreateProductCommand(
     string? Description,
     string? Unit,
     decimal Price,
-    int StockQuantity);
+    int StockQuantity,
+    ProductType Type = ProductType.Product,
+    DateTime? AvailableUntil = null);
 
 public sealed record UpdateProductCommand(
     Guid ProductId,
@@ -28,14 +30,16 @@ public sealed record UpdateProductCommand(
     string? Unit,
     decimal? Price,
     bool? IsAvailable,
-    int? ExpectedVersion);
+    int? ExpectedVersion,
+    DateTime? AvailableUntil = null);
 
 public sealed record ProductQuery(
     PageRequest Page,
     Guid? FarmId,
     string? Search,
     bool OnlyInStock,
-    bool IncludeUnavailable);
+    bool IncludeUnavailable,
+    ProductType? Type = null);
 
 public sealed record StockLine(Guid ProductId, int Quantity);
 

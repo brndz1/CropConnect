@@ -96,6 +96,13 @@ message DeleteFarmRequest {
   string id = 1;
 }
 
+enum ProductType {
+  PRODUCT_TYPE_UNSPECIFIED = 0;
+  PRODUCT_TYPE_PRODUCT = 1;
+  PRODUCT_TYPE_PRE_DEFINED_BASKET = 2;
+  PRODUCT_TYPE_SURPRISE_BASKET = 3;
+}
+
 message ProductInfo {
   string id = 1;
   string farm_id = 2;
@@ -109,6 +116,8 @@ message ProductInfo {
   google.protobuf.Timestamp created_at = 10;
   google.protobuf.Timestamp updated_at = 11;
   int32 version = 12;
+  ProductType type = 13;
+  optional google.protobuf.Timestamp available_until = 14;
 }
 
 message CreateProductRequest {
@@ -118,6 +127,8 @@ message CreateProductRequest {
   string unit = 4;
   DecimalValue price = 5;
   int32 stock_quantity = 6;
+  ProductType type = 7;
+  optional google.protobuf.Timestamp available_until = 8;
 }
 
 message GetProductRequest {
@@ -131,6 +142,7 @@ message ListProductsRequest {
   optional string search = 4;
   bool only_in_stock = 5;
   bool include_unavailable = 6;
+  optional ProductType type = 7;
 }
 
 message ListProductsResponse {
@@ -148,6 +160,7 @@ message UpdateProductRequest {
   DecimalValue price = 5;
   optional bool is_available = 6;
   optional int32 expected_version = 7;
+  optional google.protobuf.Timestamp available_until = 8;
 }
 
 message AdjustStockRequest {

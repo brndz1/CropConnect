@@ -38,7 +38,8 @@ public sealed class ProductsGrpcService : ProductsService.ProductsServiceBase
             RequestParsing.ParseOptionalId(request.HasFarmId, request.FarmId, "Farm ID"),
             RequestParsing.OptionalText(request.HasSearch, request.Search),
             request.OnlyInStock,
-            request.IncludeUnavailable);
+            request.IncludeUnavailable,
+            request.HasType ? request.Type.ToDomain() : null);
 
         var page = await _products.ListAsync(context.GetCaller(), query, context.CancellationToken);
         return page.ToProto();
@@ -56,7 +57,9 @@ public sealed class ProductsGrpcService : ProductsService.ProductsServiceBase
             request.Description,
             request.Unit,
             RequestParsing.RequiredDecimal(request.Price, "Price"),
-            request.StockQuantity);
+            request.StockQuantity,
+            request.Type.ToDomain(),
+            RequestParsing.OptionalTimestamp(request.HasAvailableUntil, request.AvailableUntil));
 
         var product = await _products.CreateAsync(context.GetCaller(), command, context.CancellationToken);
         return product.ToProto();
@@ -71,7 +74,8 @@ public sealed class ProductsGrpcService : ProductsService.ProductsServiceBase
             RequestParsing.OptionalText(request.HasUnit, request.Unit),
             RequestParsing.OptionalDecimal(request.Price, "Price"),
             RequestParsing.OptionalFlag(request.HasIsAvailable, request.IsAvailable),
-            RequestParsing.OptionalNumber(request.HasExpectedVersion, request.ExpectedVersion));
+            RequestParsing.OptionalNumber(request.HasExpectedVersion, request.ExpectedVersion),
+            RequestParsing.OptionalTimestamp(request.HasAvailableUntil, request.AvailableUntil));
 
         var product = await _products.UpdateAsync(context.GetCaller(), command, context.CancellationToken);
         return product.ToProto();

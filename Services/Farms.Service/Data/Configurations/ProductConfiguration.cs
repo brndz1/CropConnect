@@ -23,6 +23,15 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Unit).HasMaxLength(FieldLimits.UnitMaxLength).IsRequired();
         builder.Property(p => p.Price).HasPrecision(FieldLimits.MoneyPrecision, FieldLimits.MoneyScale);
 
+        builder.Property(p => p.Type)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .HasDefaultValue(ProductType.Product)
+            .IsRequired();
+
+        builder.Property(p => p.AvailableUntil)
+            .IsRequired(false);
+
         builder.HasOne(p => p.Farm)
             .WithMany()
             .HasForeignKey(p => p.FarmId)
@@ -30,5 +39,6 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
 
         builder.HasIndex(p => p.FarmId);
         builder.HasIndex(p => p.Name);
+        builder.HasIndex(p => p.Type);
     }
 }

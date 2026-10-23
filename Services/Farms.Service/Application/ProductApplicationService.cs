@@ -54,7 +54,10 @@ public sealed class ProductApplicationService : IProductApplicationService
             .Include(p => p.Farm)
             .FirstOrDefaultAsync(p => p.Id == productId && !p.IsDeleted && !p.Farm.IsDeleted, cancellationToken);
 
-        return product is not null && (product.IsVisibleInCatalog || caller.CanManage(product.Farm))
+        var now = Now;
+        var isVisible = product is not null && product.IsVisibleInCatalog && !product.IsExpired(now);
+
+        return product is not null && (isVisible || caller.CanManage(product.Farm))
             ? product
             : throw new NotFoundException(ErrorMessages.ProductNotFound);
     }
@@ -70,13 +73,19 @@ public sealed class ProductApplicationService : IProductApplicationService
             products = products.Where(p => p.FarmId == farmId);
         }
 
+        if (query.Type is { } type)
+        {
+            products = products.Where(p => p.Type == type);
+        }
+
         if (query.IncludeUnavailable)
         {
             await EnsureCanListUnavailableAsync(caller, query.FarmId, cancellationToken);
         }
         else
         {
-            products = products.Where(p => p.IsAvailable && p.Farm.IsActive);
+            var now = Now;
+            products = products.Where(p => p.IsAvailable && p.Farm.IsActive && (p.AvailableUntil == null || p.AvailableUntil > now));
         }
 
         if (query.OnlyInStock)
@@ -115,12 +124,14 @@ public sealed class ProductApplicationService : IProductApplicationService
             command.Unit,
             command.Price,
             command.StockQuantity,
+            command.Type,
+            command.AvailableUntil,
             Now);
 
         _dbContext.Products.Add(product);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Product {ProductId} created in farm {FarmId}", product.Id, farm.Id);
+        _logger.LogInformation("Product {ProductId} ({ProductType}) created in farm {FarmId}", product.Id, product.Type, farm.Id);
         return product;
     }
 
@@ -131,7 +142,14 @@ public sealed class ProductApplicationService : IProductApplicationService
 
         caller.EnsureCanManage(product.Farm);
         product.EnsureVersion(command.ExpectedVersion);
-        product.Update(command.Name, command.Description, command.Unit, command.Price, command.IsAvailable, Now);
+        product.Update(
+            command.Name,
+            command.Description,
+            command.Unit,
+            command.Price,
+            command.IsAvailable,
+            command.AvailableUntil,
+            Now);
 
         await _dbContext.SaveChangesOrConflictAsync(product, cancellationToken);
 

@@ -1,5 +1,6 @@
 using Farms.Service.Models;
 using Farms.Service.Protos;
+using Google.Protobuf.WellKnownTypes;
 
 namespace Farms.Service.Services;
 
@@ -35,6 +36,9 @@ public static class RequestParsing
 
     public static bool? OptionalFlag(bool hasValue, bool value) =>
         hasValue ? value : null;
+
+    public static DateTime? OptionalTimestamp(bool hasValue, Timestamp? value) =>
+        hasValue && value is not null ? value.ToDateTime() : null;
 
     #endregion
 }
