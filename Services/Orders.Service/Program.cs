@@ -1,12 +1,40 @@
+using Orders.Service;
+using Orders.Service.Data;
+using Orders.Service.Security;
+using Orders.Service.Services;
+
+#region Services
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-builder.Services.AddGrpc();
+
+builder.Services
+    .AddOrdersApi(builder.Environment)
+    .AddOrdersSecurity()
+    .AddOrdersInfrastructure(builder.Environment)
+    .AddOrdersApplication();
+
+#endregion
+
+#region Pipeline
 
 var app = builder.Build();
 
-app.MapGet("/", () => "Orders.Service is running.");
+await app.ApplyMigrationsIfConfiguredAsync();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+#endregion
+
+#region Endpoints
+
+app.MapGrpcService<OrdersGrpcService>();
+app.MapGrpcService<ReviewsGrpcService>();
 app.MapDefaultEndpoints();
+
+#endregion
 
 await app.RunAsync();
 
