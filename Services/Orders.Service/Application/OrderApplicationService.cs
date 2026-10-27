@@ -43,6 +43,11 @@ public sealed class OrderApplicationService : IOrderApplicationService
     {
         var customerId = caller.RequireUserId();
 
+        if (!caller.IsClient)
+        {
+            throw new ForbiddenException(ErrorMessages.OnlyClientsCanCreateOrders);
+        }
+
         if (command.Items.Count == 0)
         {
             throw new InvalidInputException(ErrorMessages.OrderItemsRequired);
