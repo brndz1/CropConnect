@@ -39,3 +39,58 @@ message ValidateTokenResponse {
   string user_id = 2;
   string role = 3;
 }
+
+// RF03: user management by the administrator.
+service UserAccountsService {
+  rpc CreateUser (CreateUserRequest) returns (UserAccountInfo);
+  rpc GetUser (GetUserRequest) returns (UserAccountInfo);
+  rpc ListUsers (ListUsersRequest) returns (ListUsersResponse);
+  rpc UpdateUser (UpdateUserRequest) returns (UserAccountInfo);
+  rpc SetUserActive (SetUserActiveRequest) returns (UserAccountInfo);
+}
+
+message UserAccountInfo {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string role = 4;
+  bool is_active = 5;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+  string role = 4;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message ListUsersRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  optional string role = 3;
+  optional bool is_active = 4;
+  optional string search = 5;
+}
+
+message ListUsersResponse {
+  repeated UserAccountInfo users = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message UpdateUserRequest {
+  string id = 1;
+  optional string username = 2;
+  optional string email = 3;
+  optional string role = 4;
+}
+
+message SetUserActiveRequest {
+  string id = 1;
+  bool is_active = 2;
+}

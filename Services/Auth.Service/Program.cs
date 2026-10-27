@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Auth.Service.Data;
+using Auth.Service.Models;
 using Auth.Service.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +17,18 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
 builder.Services.AddScoped<JwtTokenGenerator>();
 builder.Services.AddSingleton<JwtTokenValidator>();
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
+builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<JwtTokenValidator>((bearer, validator) =>
+    {
+        bearer.MapInboundClaims = false;
+        bearer.TokenValidationParameters = validator.CreateParameters();
+    });
+
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(UserAccountsGrpcService.AdminPolicy, policy => policy
+        .RequireClaim(JwtTokenGenerator.RoleClaim, nameof(Role.Admin)));
+
 var app = builder.Build();
 
 if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
@@ -26,7 +40,11 @@ if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
 await app.SeedBootstrapAdminAsync();
 
 // Configure the HTTP request pipeline
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapGrpcService<AuthGrpcService>();
+app.MapGrpcService<UserAccountsGrpcService>();
 app.MapDefaultEndpoints();
 app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
 
