@@ -1,5 +1,6 @@
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Users.Service.Data;
 using Users.Service.Models;
 using Users.Service.Protos;
@@ -19,98 +20,72 @@ public class UsersGrpcService : Protos.UsersService.UsersServiceBase
 
     public override async Task<UserProfileResponse> GetUserProfile(GetUserProfileRequest request, ServerCallContext context)
     {
-        if (!Guid.TryParse(request.Id, out var userId))
-        {
-            return new UserProfileResponse { Success = false, Message = "Invalid User ID format." };
-        }
+        var userId = ProfileInput.Id(request.Id);
+        var profile = await FindAsync(userId, context.CancellationToken);
 
-        var profile = await _dbContext.UserProfiles.FindAsync(userId);
-
-        if (profile == null)
-        {
-            return new UserProfileResponse { Success = false, Message = "User profile not found." };
-        }
-
-        return new UserProfileResponse
-        {
-            Success = true,
-            Message = "Profile retrieved successfully.",
-            Id = profile.Id.ToString(),
-            FirstName = profile.FirstName,
-            LastName = profile.LastName,
-            PhoneNumber = profile.PhoneNumber
-        };
+        return ToResponse(profile);
     }
 
     public override async Task<UserProfileResponse> CreateUserProfile(CreateUserProfileRequest request, ServerCallContext context)
     {
-        if (!Guid.TryParse(request.Id, out var userId))
-        {
-            return new UserProfileResponse { Success = false, Message = "Invalid User ID format." };
-        }
-
-        if (await _dbContext.UserProfiles.AnyAsync(u => u.Id == userId))
-        {
-            return new UserProfileResponse { Success = false, Message = "User profile already exists." };
-        }
+        var userId = ProfileInput.Id(request.Id);
 
         var profile = new UserProfile
         {
             Id = userId,
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-            PhoneNumber = request.PhoneNumber,
+            FirstName = ProfileInput.Name(request.FirstName, "First name"),
+            LastName = ProfileInput.Name(request.LastName, "Last name"),
+            PhoneNumber = ProfileInput.PhoneNumber(request.PhoneNumber),
             CreatedAt = DateTime.UtcNow
         };
 
+        if (await _dbContext.UserProfiles.AnyAsync(u => u.Id == userId, context.CancellationToken))
+        {
+            throw new ConflictException("User profile already exists.");
+        }
+
         _dbContext.UserProfiles.Add(profile);
-        await _dbContext.SaveChangesAsync();
+
+        try
+        {
+            await _dbContext.SaveChangesAsync(context.CancellationToken);
+        }
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            throw new ConflictException("User profile already exists.");
+        }
 
         _logger.LogInformation("User profile created for User ID {UserId}", userId);
 
-        return new UserProfileResponse
-        {
-            Success = true,
-            Message = "Profile created successfully.",
-            Id = profile.Id.ToString(),
-            FirstName = profile.FirstName,
-            LastName = profile.LastName,
-            PhoneNumber = profile.PhoneNumber
-        };
+        return ToResponse(profile);
     }
 
     public override async Task<UserProfileResponse> UpdateUserProfile(UpdateUserProfileRequest request, ServerCallContext context)
     {
-        if (!Guid.TryParse(request.Id, out var userId))
-        {
-            return new UserProfileResponse { Success = false, Message = "Invalid User ID format." };
-        }
+        var userId = ProfileInput.Id(request.Id);
+        var profile = await FindAsync(userId, context.CancellationToken);
 
-        var profile = await _dbContext.UserProfiles.FindAsync(userId);
-
-        if (profile == null)
-        {
-            return new UserProfileResponse { Success = false, Message = "User profile not found." };
-        }
-
-        profile.FirstName = request.FirstName;
-        profile.LastName = request.LastName;
-        profile.PhoneNumber = request.PhoneNumber;
-
+        profile.FirstName = ProfileInput.Name(request.FirstName, "First name");
+        profile.LastName = ProfileInput.Name(request.LastName, "Last name");
+        profile.PhoneNumber = ProfileInput.PhoneNumber(request.PhoneNumber);
         profile.UpdatedAt = DateTime.UtcNow;
 
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(context.CancellationToken);
 
         _logger.LogInformation("User profile updated for User ID {UserId}", userId);
 
-        return new UserProfileResponse
-        {
-            Success = true,
-            Message = "Profile updated successfully.",
-            Id = profile.Id.ToString(),
-            FirstName = profile.FirstName,
-            LastName = profile.LastName,
-            PhoneNumber = profile.PhoneNumber
-        };
+        return ToResponse(profile);
     }
+
+    private async Task<UserProfile> FindAsync(Guid userId, CancellationToken cancellationToken) =>
+        await _dbContext.UserProfiles.FindAsync([userId], cancellationToken)
+        ?? throw new NotFoundException("User profile not found.");
+
+    private static UserProfileResponse ToResponse(UserProfile profile) => new()
+    {
+        Id = profile.Id.ToString(),
+        FirstName = profile.FirstName,
+        LastName = profile.LastName,
+        PhoneNumber = profile.PhoneNumber
+    };
 }

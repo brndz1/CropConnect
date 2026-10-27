@@ -29,10 +29,8 @@ message UpdateUserProfileRequest {
 }
 
 message UserProfileResponse {
-  bool success = 1;
-  string message = 2;
-  string id = 3;
-  string first_name = 4;
-  string last_name = 5;
-  string phone_number = 6;
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string phone_number = 4;
 }
