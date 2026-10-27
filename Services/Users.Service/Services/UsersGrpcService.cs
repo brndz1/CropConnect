@@ -1,4 +1,5 @@
 using Grpc.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Users.Service.Data;
@@ -7,6 +8,7 @@ using Users.Service.Protos;
 
 namespace Users.Service.Services;
 
+[Authorize]
 public class UsersGrpcService : Protos.UsersService.UsersServiceBase
 {
     private readonly UsersDbContext _dbContext;
@@ -21,6 +23,8 @@ public class UsersGrpcService : Protos.UsersService.UsersServiceBase
     public override async Task<UserProfileResponse> GetUserProfile(GetUserProfileRequest request, ServerCallContext context)
     {
         var userId = ProfileInput.Id(request.Id);
+        EnsureCanAccess(context, userId);
+
         var profile = await FindAsync(userId, context.CancellationToken);
 
         return ToResponse(profile);
@@ -29,6 +33,7 @@ public class UsersGrpcService : Protos.UsersService.UsersServiceBase
     public override async Task<UserProfileResponse> CreateUserProfile(CreateUserProfileRequest request, ServerCallContext context)
     {
         var userId = ProfileInput.Id(request.Id);
+        EnsureCanAccess(context, userId);
 
         var profile = new UserProfile
         {
@@ -63,6 +68,8 @@ public class UsersGrpcService : Protos.UsersService.UsersServiceBase
     public override async Task<UserProfileResponse> UpdateUserProfile(UpdateUserProfileRequest request, ServerCallContext context)
     {
         var userId = ProfileInput.Id(request.Id);
+        EnsureCanAccess(context, userId);
+
         var profile = await FindAsync(userId, context.CancellationToken);
 
         profile.FirstName = ProfileInput.Name(request.FirstName, "First name");
@@ -75,6 +82,18 @@ public class UsersGrpcService : Protos.UsersService.UsersServiceBase
         _logger.LogInformation("User profile updated for User ID {UserId}", userId);
 
         return ToResponse(profile);
+    }
+
+    // A profile belongs to the account with the same ID, so only that user or an administrator may use it.
+    private static void EnsureCanAccess(ServerCallContext context, Guid userId)
+    {
+        var user = context.GetHttpContext().User;
+        var isOwner = Guid.TryParse(user.FindFirst("sub")?.Value, out var callerId) && callerId == userId;
+
+        if (!isOwner && !user.HasClaim("role", "Admin"))
+        {
+            throw new ForbiddenException("You can only access your own profile.");
+        }
     }
 
     private async Task<UserProfile> FindAsync(Guid userId, CancellationToken cancellationToken) =>
