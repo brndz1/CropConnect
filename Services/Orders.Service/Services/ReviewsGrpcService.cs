@@ -26,6 +26,7 @@ public sealed class ReviewsGrpcService : ReviewsService.ReviewsServiceBase
         return result.ToProto();
     }
 
+    [Authorize]
     public override async Task<ReviewInfo> GetReviewByOrder(GetReviewByOrderRequest request, ServerCallContext context)
     {
         var caller = context.GetCaller();
