@@ -22,6 +22,8 @@ if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
     await scope.ServiceProvider.GetRequiredService<AuthDbContext>().Database.MigrateAsync();
 }
 
+await app.SeedBootstrapAdminAsync();
+
 // Configure the HTTP request pipeline
 app.MapGrpcService<AuthGrpcService>();
 app.MapDefaultEndpoints();

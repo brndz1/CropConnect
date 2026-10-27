@@ -29,6 +29,11 @@ public class AuthGrpcService : Protos.AuthService.AuthServiceBase
         var password = UserInput.Password(request.Password);
         var role = UserInput.Role(request.Role);
 
+        if (role == Role.Admin)
+        {
+            throw new ForbiddenException("Administrators cannot self-register.");
+        }
+
         // Check if user already exists
         if (await _dbContext.Users.AnyAsync(u => u.Email == email || u.Username == username, context.CancellationToken))
         {
