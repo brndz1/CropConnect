@@ -71,6 +71,7 @@ public static class DependencyInjection
         services.AddScoped<IOrderEventPublisher, LoggingOrderEventPublisher>();
         services.AddScoped<IOrderApplicationService, OrderApplicationService>();
         services.AddScoped<IReviewApplicationService, ReviewApplicationService>();
+        services.AddHostedService<StockReleaseWorker>();
 
         return services;
     }

@@ -71,6 +71,7 @@ public sealed class ReviewApplicationService : IReviewApplicationService
     {
         var review = await _dbContext.Reviews
             .AsNoTracking()
+            .Include(r => r.Order)
             .FirstOrDefaultAsync(r => r.OrderId == orderId, cancellationToken);
 
         if (review is null)
@@ -78,6 +79,7 @@ public sealed class ReviewApplicationService : IReviewApplicationService
             throw new NotFoundException(ErrorMessages.ReviewNotFound);
         }
 
+        caller.EnsureCanView(review.Order);
         return ToResult(review);
     }
 
