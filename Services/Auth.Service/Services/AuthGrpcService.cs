@@ -82,6 +82,12 @@ public class AuthGrpcService : Protos.AuthService.AuthServiceBase
             throw new UnauthenticatedException("Invalid email or password.");
         }
 
+        if (!user.IsActive)
+        {
+            _logger.LogWarning("Login attempt for deactivated user {Email}.", email);
+            throw new ForbiddenException("This account has been deactivated.");
+        }
+
         var token = _jwtTokenGenerator.GenerateToken(user);
 
         _logger.LogInformation("User {Email} logged in successfully.", user.Email);
@@ -89,20 +95,23 @@ public class AuthGrpcService : Protos.AuthService.AuthServiceBase
         return new LoginResponse { Token = token };
     }
 
-    public override Task<ValidateTokenResponse> ValidateToken(ValidateTokenRequest request, ServerCallContext context)
+    public override async Task<ValidateTokenResponse> ValidateToken(ValidateTokenRequest request, ServerCallContext context)
     {
         var principal = _jwtTokenValidator.Validate(request.Token);
 
-        if (principal is null)
+        // A deactivated user's tokens stop being valid here before they expire.
+        if (principal is null
+            || !Guid.TryParse(principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out var userId)
+            || !await _dbContext.Users.AnyAsync(u => u.Id == userId && u.IsActive, context.CancellationToken))
         {
-            return Task.FromResult(new ValidateTokenResponse { IsValid = false });
+            return new ValidateTokenResponse { IsValid = false };
         }
 
-        return Task.FromResult(new ValidateTokenResponse
+        return new ValidateTokenResponse
         {
             IsValid = true,
-            UserId = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? string.Empty,
+            UserId = userId.ToString(),
             Role = principal.FindFirst(JwtTokenGenerator.RoleClaim)?.Value ?? string.Empty
-        });
+        };
     }
 }
