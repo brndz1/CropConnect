@@ -26,4 +26,8 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\CropConnect.ServiceDefaults\CropConnect.ServiceDefaults.csproj" />
+  </ItemGroup>
+
 </Project>
