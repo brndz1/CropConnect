@@ -18,9 +18,7 @@ message RegisterRequest {
 }
 
 message RegisterResponse {
-  bool success = 1;
-  string message = 2;
-  string user_id = 3;
+  string user_id = 1;
 }
 
 message LoginRequest {
@@ -29,9 +27,7 @@ message LoginRequest {
 }
 
 message LoginResponse {
-  bool success = 1;
-  string token = 2;
-  string message = 3;
+  string token = 1;
 }
 
 message ValidateTokenRequest {
