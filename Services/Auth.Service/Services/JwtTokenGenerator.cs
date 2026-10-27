@@ -8,6 +8,9 @@ namespace Auth.Service.Services;
 
 public class JwtTokenGenerator
 {
+    // Short claim name written in the token; the other services read the role from it.
+    public const string RoleClaim = "role";
+
     private readonly IConfiguration _configuration;
 
     public JwtTokenGenerator(IConfiguration configuration)
@@ -30,7 +33,7 @@ public class JwtTokenGenerator
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.Role.ToString())
+            new Claim(RoleClaim, user.Role.ToString())
         };
 
         var token = new JwtSecurityToken(

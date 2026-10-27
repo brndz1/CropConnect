@@ -20,6 +20,13 @@ public class AuthDbContext : DbContext
             .Property(u => u.Role)
             .HasConversion<string>();
             
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.Property(u => u.Username).HasMaxLength(FieldLimits.UsernameMaxLength);
+            entity.Property(u => u.Email).HasMaxLength(FieldLimits.EmailMaxLength);
+            entity.Property(u => u.Role).HasMaxLength(FieldLimits.RoleMaxLength);
+        });
+
         // Ensure email and username are unique
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email)
