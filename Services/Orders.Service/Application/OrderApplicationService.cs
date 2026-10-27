@@ -82,12 +82,16 @@ public sealed class OrderApplicationService : IOrderApplicationService
                 order.AddItem(orderItem);
             }
 
+            // The reservation TTL only covers this creation step; once confirmed, stock stays held
+            // until the order is cancelled, however long it waits in Pending.
+            await _stockClient.ConfirmStockAsync(orderId, cancellationToken);
+
             _dbContext.Orders.Add(order);
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to persist order {OrderId}. Executing stock release compensation.", orderId);
+            _logger.LogError(ex, "Failed to create order {OrderId}. Executing stock release compensation.", orderId);
             try
             {
                 await _stockClient.ReleaseStockAsync(orderId, CancellationToken.None);
@@ -232,7 +236,6 @@ public sealed class OrderApplicationService : IOrderApplicationService
         {
             case OrderStatus.Confirmed:
                 order.Confirm(now);
-                await _stockClient.ConfirmStockAsync(order.Id, cancellationToken);
                 break;
 
             case OrderStatus.ReadyForPickup:
