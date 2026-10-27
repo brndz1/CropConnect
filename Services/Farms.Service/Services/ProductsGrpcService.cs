@@ -59,7 +59,7 @@ public sealed class ProductsGrpcService : ProductsService.ProductsServiceBase
             RequestParsing.RequiredDecimal(request.Price, "Price"),
             request.StockQuantity,
             request.Type.ToDomain(),
-            RequestParsing.OptionalTimestamp(request.HasAvailableUntil, request.AvailableUntil));
+            RequestParsing.OptionalTimestamp(request.AvailableUntil));
 
         var product = await _products.CreateAsync(context.GetCaller(), command, context.CancellationToken);
         return product.ToProto();
@@ -75,7 +75,7 @@ public sealed class ProductsGrpcService : ProductsService.ProductsServiceBase
             RequestParsing.OptionalDecimal(request.Price, "Price"),
             RequestParsing.OptionalFlag(request.HasIsAvailable, request.IsAvailable),
             RequestParsing.OptionalNumber(request.HasExpectedVersion, request.ExpectedVersion),
-            RequestParsing.OptionalTimestamp(request.HasAvailableUntil, request.AvailableUntil));
+            RequestParsing.OptionalTimestamp(request.AvailableUntil));
 
         var product = await _products.UpdateAsync(context.GetCaller(), command, context.CancellationToken);
         return product.ToProto();

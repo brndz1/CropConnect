@@ -37,8 +37,8 @@ public static class RequestParsing
     public static bool? OptionalFlag(bool hasValue, bool value) =>
         hasValue ? value : null;
 
-    public static DateTime? OptionalTimestamp(bool hasValue, Timestamp? value) =>
-        hasValue && value is not null ? value.ToDateTime() : null;
+    public static DateTime? OptionalTimestamp(Timestamp? value) =>
+        value?.ToDateTime();
 
     public static TimeOnly ParseTime(string value, string field) =>
         TimeOnly.TryParse(value, out var time)
