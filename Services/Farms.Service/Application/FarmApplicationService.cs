@@ -59,7 +59,7 @@ public sealed class FarmApplicationService : IFarmApplicationService
 
     public async Task<Farm> GetAsync(Caller caller, Guid farmId, CancellationToken cancellationToken)
     {
-        var farm = await _dbContext.Farms.AsNoTracking()
+        var farm = await ReadFarmsWithSchedules()
             .FirstOrDefaultAsync(f => f.Id == farmId && !f.IsDeleted, cancellationToken);
 
         return farm is not null && (farm.IsActive || caller.CanManage(farm))
@@ -69,7 +69,7 @@ public sealed class FarmApplicationService : IFarmApplicationService
 
     public async Task<PagedResult<Farm>> ListAsync(Caller caller, FarmQuery query, CancellationToken cancellationToken)
     {
-        var farms = _dbContext.Farms.AsNoTracking().Where(f => !f.IsDeleted);
+        var farms = ReadFarmsWithSchedules().Where(f => !f.IsDeleted);
 
         if (query.OwnerId is { } ownerId)
         {
@@ -106,7 +106,7 @@ public sealed class FarmApplicationService : IFarmApplicationService
     {
         var userId = caller.RequireUserId();
 
-        return await _dbContext.Farms.AsNoTracking()
+        return await ReadFarmsWithSchedules()
             .Where(f => f.OwnerId == userId && !f.IsDeleted)
             .OrderBy(f => f.Name)
             .ThenBy(f => f.Id)
@@ -240,6 +240,11 @@ public sealed class FarmApplicationService : IFarmApplicationService
     #endregion
 
     #region Helpers
+
+    // RF09: the catalog shows each farm together with its pickup schedules.
+    private IQueryable<Farm> ReadFarmsWithSchedules() =>
+        _dbContext.Farms.AsNoTracking()
+            .Include(f => f.PickupSchedules.Where(s => !s.IsDeleted).OrderBy(s => s.DayOfWeek).ThenBy(s => s.OpenTime));
 
     private async Task EnsureNameAvailableAsync(Guid ownerId, string name, Guid? exceptFarmId, CancellationToken cancellationToken)
     {
