@@ -11,9 +11,6 @@ public class UserProfile
     
     public string PhoneNumber { get; set; } = string.Empty;
     
-    // Null by default because a Client or Admin may not have a Farm, or a Manager may not have registered it yet
-    public Guid? FarmId { get; set; }
-    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     public DateTime? UpdatedAt { get; set; }

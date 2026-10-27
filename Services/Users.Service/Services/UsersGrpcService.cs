@@ -38,8 +38,7 @@ public class UsersGrpcService : Protos.UsersService.UsersServiceBase
             Id = profile.Id.ToString(),
             FirstName = profile.FirstName,
             LastName = profile.LastName,
-            PhoneNumber = profile.PhoneNumber,
-            FarmId = profile.FarmId?.ToString() ?? string.Empty
+            PhoneNumber = profile.PhoneNumber
         };
     }
 
@@ -76,8 +75,7 @@ public class UsersGrpcService : Protos.UsersService.UsersServiceBase
             Id = profile.Id.ToString(),
             FirstName = profile.FirstName,
             LastName = profile.LastName,
-            PhoneNumber = profile.PhoneNumber,
-            FarmId = string.Empty
+            PhoneNumber = profile.PhoneNumber
         };
     }
 
@@ -98,12 +96,7 @@ public class UsersGrpcService : Protos.UsersService.UsersServiceBase
         profile.FirstName = request.FirstName;
         profile.LastName = request.LastName;
         profile.PhoneNumber = request.PhoneNumber;
-        
-        if (!string.IsNullOrEmpty(request.FarmId) && Guid.TryParse(request.FarmId, out var farmId))
-        {
-            profile.FarmId = farmId;
-        }
-        
+
         profile.UpdatedAt = DateTime.UtcNow;
 
         await _dbContext.SaveChangesAsync();
@@ -117,8 +110,7 @@ public class UsersGrpcService : Protos.UsersService.UsersServiceBase
             Id = profile.Id.ToString(),
             FirstName = profile.FirstName,
             LastName = profile.LastName,
-            PhoneNumber = profile.PhoneNumber,
-            FarmId = profile.FarmId?.ToString() ?? string.Empty
+            PhoneNumber = profile.PhoneNumber
         };
     }
 }
