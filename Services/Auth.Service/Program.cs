@@ -13,6 +13,7 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("AuthDb")));
 
 builder.Services.AddScoped<JwtTokenGenerator>();
+builder.Services.AddSingleton<JwtTokenValidator>();
 
 var app = builder.Build();
 

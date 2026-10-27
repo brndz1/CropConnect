@@ -5,7 +5,6 @@ using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
 namespace Auth.Service.Services;
 
@@ -13,12 +12,18 @@ public class AuthGrpcService : Protos.AuthService.AuthServiceBase
 {
     private readonly AuthDbContext _dbContext;
     private readonly JwtTokenGenerator _jwtTokenGenerator;
+    private readonly JwtTokenValidator _jwtTokenValidator;
     private readonly ILogger<AuthGrpcService> _logger;
 
-    public AuthGrpcService(AuthDbContext dbContext, JwtTokenGenerator jwtTokenGenerator, ILogger<AuthGrpcService> logger)
+    public AuthGrpcService(
+        AuthDbContext dbContext,
+        JwtTokenGenerator jwtTokenGenerator,
+        JwtTokenValidator jwtTokenValidator,
+        ILogger<AuthGrpcService> logger)
     {
         _dbContext = dbContext;
         _jwtTokenGenerator = jwtTokenGenerator;
+        _jwtTokenValidator = jwtTokenValidator;
         _logger = logger;
     }
 
@@ -86,30 +91,18 @@ public class AuthGrpcService : Protos.AuthService.AuthServiceBase
 
     public override Task<ValidateTokenResponse> ValidateToken(ValidateTokenRequest request, ServerCallContext context)
     {
-        try
-        {
-            // TODO LATER: Validate token signature
-            var handler = new JwtSecurityTokenHandler();
-            var jwtToken = handler.ReadJwtToken(request.Token);
-            
-            var userId = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value ?? string.Empty;
-            var role = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value ?? string.Empty;
+        var principal = _jwtTokenValidator.Validate(request.Token);
 
-            return Task.FromResult(new ValidateTokenResponse
-            {
-                IsValid = true,
-                UserId = userId,
-                Role = role
-            });
-        }
-        catch
+        if (principal is null)
         {
-            return Task.FromResult(new ValidateTokenResponse
-            {
-                IsValid = false,
-                UserId = string.Empty,
-                Role = string.Empty
-            });
+            return Task.FromResult(new ValidateTokenResponse { IsValid = false });
         }
+
+        return Task.FromResult(new ValidateTokenResponse
+        {
+            IsValid = true,
+            UserId = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? string.Empty,
+            Role = principal.FindFirst(JwtTokenGenerator.RoleClaim)?.Value ?? string.Empty
+        });
     }
 }
