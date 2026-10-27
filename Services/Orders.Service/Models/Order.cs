@@ -20,6 +20,8 @@ public sealed class Order : VersionedEntity
 
     public string? CancellationReason { get; private set; }
 
+    public DateTime? StockReleasedAt { get; private set; }
+
     public List<OrderItem> Items { get; private set; } = [];
 
     public Review? Review { get; private set; }
@@ -117,6 +119,16 @@ public sealed class Order : VersionedEntity
         Status = OrderStatus.Cancelled;
         CancellationReason = Guard.Optional(reason, nameof(CancellationReason), FieldLimits.MaxReasonLength);
         Touch(now);
+    }
+
+    public void MarkStockReleased(DateTime now)
+    {
+        if (Status != OrderStatus.Cancelled)
+        {
+            throw new BusinessRuleException("Stock can only be released for cancelled orders.");
+        }
+
+        StockReleasedAt ??= now;
     }
 
     #endregion

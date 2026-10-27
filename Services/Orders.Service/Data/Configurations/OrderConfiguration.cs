@@ -30,6 +30,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasIndex(o => o.FarmOwnerId);
         builder.HasIndex(o => o.Status);
         builder.HasIndex(o => o.CreatedAt);
+        builder.HasIndex(o => new { o.Status, o.StockReleasedAt });
 
         builder.HasMany(o => o.Items)
             .WithOne(i => i.Order)

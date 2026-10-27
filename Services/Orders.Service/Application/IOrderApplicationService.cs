@@ -13,4 +13,6 @@ public interface IOrderApplicationService
     Task<OrderResult> UpdateOrderStatusAsync(Caller caller, UpdateOrderStatusCommand command, CancellationToken cancellationToken);
 
     Task<OrderResult> CancelOrderAsync(Caller caller, CancelOrderCommand command, CancellationToken cancellationToken);
+
+    Task<int> ReleasePendingStockAsync(CancellationToken cancellationToken);
 }

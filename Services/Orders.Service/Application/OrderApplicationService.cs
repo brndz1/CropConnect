@@ -234,6 +234,11 @@ public sealed class OrderApplicationService : IOrderApplicationService
         caller.EnsureCanManage(order);
         order.EnsureVersion(command.ExpectedVersion);
 
+        if (command.NewStatus == OrderStatus.Cancelled)
+        {
+            return await CancelAsync(order, reason: null, isManagerOrAdmin: true, cancellationToken);
+        }
+
         var previousStatus = order.Status;
         var now = Now;
 
@@ -251,29 +256,15 @@ public sealed class OrderApplicationService : IOrderApplicationService
                 order.MarkPickedUp(now);
                 break;
 
-            case OrderStatus.Cancelled:
-                order.Cancel(null, true, now);
-                await _stockClient.ReleaseStockAsync(order.Id, cancellationToken);
-                break;
-
             default:
                 throw new InvalidInputException($"Unsupported target status '{command.NewStatus}'.");
         }
 
         await _dbContext.SaveChangesOrConflictAsync(order, cancellationToken);
 
-        if (command.NewStatus == OrderStatus.Cancelled)
-        {
-            await _eventPublisher.PublishOrderCancelledAsync(
-                new OrderCancelledEvent(order.Id, order.CustomerId, order.FarmId, order.FarmOwnerId, order.CancellationReason, now),
-                cancellationToken);
-        }
-        else
-        {
-            await _eventPublisher.PublishOrderStatusChangedAsync(
-                new OrderStatusChangedEvent(order.Id, order.CustomerId, order.FarmId, order.FarmOwnerId, previousStatus, order.Status, now),
-                cancellationToken);
-        }
+        await _eventPublisher.PublishOrderStatusChangedAsync(
+            new OrderStatusChangedEvent(order.Id, order.CustomerId, order.FarmId, order.FarmOwnerId, previousStatus, order.Status, now),
+            cancellationToken);
 
         return ToResult(order);
     }
@@ -295,19 +286,75 @@ public sealed class OrderApplicationService : IOrderApplicationService
         caller.EnsureCanCancel(order);
         order.EnsureVersion(command.ExpectedVersion);
 
-        var isManagerOrAdmin = caller.IsManager || caller.IsAdmin;
+        return await CancelAsync(order, command.Reason, caller.IsManager || caller.IsAdmin, cancellationToken);
+    }
+
+    private async Task<OrderResult> CancelAsync(
+        Order order,
+        string? reason,
+        bool isManagerOrAdmin,
+        CancellationToken cancellationToken)
+    {
         var now = Now;
 
-        order.Cancel(command.Reason, isManagerOrAdmin, now);
-
+        order.Cancel(reason, isManagerOrAdmin, now);
         await _dbContext.SaveChangesOrConflictAsync(order, cancellationToken);
-        await _stockClient.ReleaseStockAsync(order.Id, cancellationToken);
+
+        // The cancellation is already committed, so a Farms failure must not fail the request:
+        // StockReleaseWorker retries the release until it succeeds.
+        await TryReleaseStockAsync(order, cancellationToken);
 
         await _eventPublisher.PublishOrderCancelledAsync(
             new OrderCancelledEvent(order.Id, order.CustomerId, order.FarmId, order.FarmOwnerId, order.CancellationReason, now),
             cancellationToken);
 
         return ToResult(order);
+    }
+
+    #endregion
+
+    #region Stock Release Retry
+
+    public async Task<int> ReleasePendingStockAsync(CancellationToken cancellationToken)
+    {
+        var orders = await _dbContext.Orders
+            .Where(o => o.Status == OrderStatus.Cancelled && o.StockReleasedAt == null)
+            .OrderBy(o => o.UpdatedAt)
+            .Take(_options.StockReleaseBatchSize)
+            .ToListAsync(cancellationToken);
+
+        var released = 0;
+
+        foreach (var order in orders)
+        {
+            if (await TryReleaseStockAsync(order, cancellationToken))
+            {
+                released++;
+            }
+        }
+
+        return released;
+    }
+
+    private async Task<bool> TryReleaseStockAsync(Order order, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _stockClient.ReleaseStockAsync(order.Id, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not NotFoundException)
+        {
+            _logger.LogWarning(ex, "Stock release for cancelled order {OrderId} failed; it will be retried.", order.Id);
+            return false;
+        }
+        catch (NotFoundException)
+        {
+            // Farms has no reservation for this order, so there is no stock to give back.
+        }
+
+        order.MarkStockReleased(Now);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
     }
 
     #endregion
