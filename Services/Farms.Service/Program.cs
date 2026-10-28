@@ -34,6 +34,7 @@ app.MapGrpcService<FarmsGrpcService>();
 app.MapGrpcService<PickupSchedulesGrpcService>();
 app.MapGrpcService<ProductsGrpcService>();
 app.MapGrpcService<StockGrpcService>();
+app.MapGrpcService<FarmDirectoryGrpcService>();
 app.MapDefaultEndpoints();
 
 #endregion

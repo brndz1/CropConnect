@@ -1,0 +1,218 @@
+[
+  {
+    "id": "c0ffee0000000001",
+    "type": "tab",
+    "label": "CropConnect sensors",
+    "disabled": false,
+    "info": "Simulates the humidity and temperature sensors of each farm and publishes the readings to RabbitMQ (exchange sensors.readings, routing key farm.{farmId}.{type}).\n\nEdit the farms in the \"Farms to simulate\" node and deploy."
+  },
+  {
+    "id": "c0ffee0000000002",
+    "type": "amqp-broker",
+    "name": "CropConnect RabbitMQ",
+    "host": "host.docker.internal",
+    "port": "5673",
+    "vhost": "?frameMax=131072",
+    "tls": false,
+    "credsFromSettings": false,
+    "credentials": {
+      "username": "guest",
+      "password": "guest"
+    }
+  },
+  {
+    "id": "c0ffee0000000010",
+    "type": "comment",
+    "z": "c0ffee0000000001",
+    "name": "1. Set the farm IDs (from Farms.Service) in \"Farms to simulate\" and deploy",
+    "info": "",
+    "x": 290,
+    "y": 40,
+    "wires": []
+  },
+  {
+    "id": "c0ffee0000000011",
+    "type": "inject",
+    "z": "c0ffee0000000001",
+    "name": "Farms to simulate",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "0.5",
+    "topic": "",
+    "payload": "[{\"farmId\":\"00000000-0000-0000-0000-000000000001\",\"sensorId\":\"sim-farm-1\"}]",
+    "payloadType": "json",
+    "x": 170,
+    "y": 100,
+    "wires": [
+      [
+        "c0ffee0000000012"
+      ]
+    ]
+  },
+  {
+    "id": "c0ffee0000000012",
+    "type": "change",
+    "z": "c0ffee0000000001",
+    "name": "Save farms",
+    "rules": [
+      {
+        "t": "set",
+        "p": "farms",
+        "pt": "flow",
+        "to": "payload",
+        "tot": "msg"
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 380,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "c0ffee0000000020",
+    "type": "comment",
+    "z": "c0ffee0000000001",
+    "name": "2. Every 30 s each farm sends one humidity and one temperature reading",
+    "info": "",
+    "x": 280,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "c0ffee0000000021",
+    "type": "inject",
+    "z": "c0ffee0000000001",
+    "name": "Every 30 s",
+    "props": [],
+    "repeat": "30",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "2",
+    "topic": "",
+    "x": 150,
+    "y": 220,
+    "wires": [
+      [
+        "c0ffee0000000022"
+      ]
+    ]
+  },
+  {
+    "id": "c0ffee0000000022",
+    "type": "function",
+    "z": "c0ffee0000000001",
+    "name": "Simulate readings",
+    "func": "// Random walk per farm and sensor type, kept in flow context between ticks.\nconst farms = flow.get('farms') || [];\nconst state = flow.get('sensorState') || {};\nconst forceDry = flow.get('forceDry') === true;\nflow.set('forceDry', false);\n\nconst ranges = {\n    humidity: { min: 0, max: 100, start: 55, step: 2 },\n    temperature: { min: -50, max: 70, start: 20, step: 0.5 }\n};\n\nfunction uuid() {\n    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {\n        const r = Math.random() * 16 | 0;\n        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);\n    });\n}\n\nconst clamp = (value, range) => Math.min(range.max, Math.max(range.min, value));\nconst messages = [];\n\nfor (const farm of farms) {\n    for (const type of Object.keys(ranges)) {\n        const range = ranges[type];\n        const key = farm.farmId + ':' + type;\n        let value = state[key] ?? range.start;\n\n        value += (Math.random() * 2 - 1) * range.step;\n\n        // Now and then the soil dries out (about once every 40 ticks), which should raise an alert.\n        if (type === 'humidity' && (forceDry || Math.random() < 0.025)) {\n            value = 20 + Math.random() * 8;\n        }\n\n        // Drift back towards normal values after an anomaly.\n        value += (range.start - value) * 0.05;\n        value = clamp(value, range);\n        state[key] = value;\n\n        messages.push({\n            routingKey: 'farm.' + farm.farmId + '.' + type,\n            payload: {\n                messageId: uuid(),\n                farmId: farm.farmId,\n                sensorId: farm.sensorId || 'sim',\n                type: type,\n                value: Math.round(value * 10) / 10,\n                timestamp: new Date().toISOString()\n            }\n        });\n    }\n}\n\nflow.set('sensorState', state);\nnode.status({ fill: 'green', shape: 'dot', text: messages.length + ' reading(s) at ' + new Date().toLocaleTimeString() });\nreturn [messages];\n",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 350,
+    "y": 220,
+    "wires": [
+      [
+        "c0ffee0000000023",
+        "c0ffee0000000024"
+      ]
+    ]
+  },
+  {
+    "id": "c0ffee0000000023",
+    "type": "amqp-out",
+    "z": "c0ffee0000000001",
+    "name": "sensors.readings",
+    "broker": "c0ffee0000000002",
+    "exchangeName": "sensors.readings",
+    "exchangeType": "topic",
+    "exchangeRoutingKey": "",
+    "exchangeRoutingKeyType": "str",
+    "exchangeDurable": true,
+    "amqpProperties": "{ \"headers\": {}, \"contentType\": \"application/json\", \"persistent\": true }",
+    "rpcTimeoutMilliseconds": 3000,
+    "outputs": 0,
+    "x": 590,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "c0ffee0000000024",
+    "type": "debug",
+    "z": "c0ffee0000000001",
+    "name": "Readings",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 570,
+    "y": 280,
+    "wires": []
+  },
+  {
+    "id": "c0ffee0000000030",
+    "type": "comment",
+    "z": "c0ffee0000000001",
+    "name": "3. Demo: make the next humidity readings too low to trigger an alert",
+    "info": "",
+    "x": 270,
+    "y": 340,
+    "wires": []
+  },
+  {
+    "id": "c0ffee0000000031",
+    "type": "inject",
+    "z": "c0ffee0000000001",
+    "name": "Force dry spell",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "x": 160,
+    "y": 400,
+    "wires": [
+      [
+        "c0ffee0000000032"
+      ]
+    ]
+  },
+  {
+    "id": "c0ffee0000000032",
+    "type": "change",
+    "z": "c0ffee0000000001",
+    "name": "Set forceDry",
+    "rules": [
+      {
+        "t": "set",
+        "p": "forceDry",
+        "pt": "flow",
+        "to": "true",
+        "tot": "bool"
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 360,
+    "y": 400,
+    "wires": []
+  }
+]

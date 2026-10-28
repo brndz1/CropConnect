@@ -28,6 +28,12 @@ public static class ProtoMappings
             info.UpdatedAt = updatedAt.ToTimestamp();
         }
 
+        if (farm is { Latitude: { } latitude, Longitude: { } longitude })
+        {
+            info.Latitude = latitude;
+            info.Longitude = longitude;
+        }
+
         if (farm.PickupSchedules.Count > 0)
         {
             info.PickupSchedules.AddRange(farm.PickupSchedules.Select(s => s.ToProto()));

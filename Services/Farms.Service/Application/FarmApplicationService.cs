@@ -15,6 +15,8 @@ public interface IFarmApplicationService
 
     Task<PagedResult<Farm>> ListMineAsync(Caller caller, PageRequest page, CancellationToken cancellationToken);
 
+    Task<Farm> GetForInternalUseAsync(Guid farmId, CancellationToken cancellationToken);
+
     #endregion
 
     #region Commands
@@ -113,6 +115,12 @@ public sealed class FarmApplicationService : IFarmApplicationService
             .ToPagedResultAsync(page, cancellationToken);
     }
 
+    // Only reachable through the internal API key: unlike GetAsync, it also returns inactive farms.
+    public async Task<Farm> GetForInternalUseAsync(Guid farmId, CancellationToken cancellationToken) =>
+        await _dbContext.Farms.AsNoTracking()
+            .FirstOrDefaultAsync(f => f.Id == farmId && !f.IsDeleted, cancellationToken)
+        ?? throw new NotFoundException(ErrorMessages.FarmNotFound);
+
     #endregion
 
     #region Commands
@@ -126,7 +134,7 @@ public sealed class FarmApplicationService : IFarmApplicationService
             throw new ForbiddenException("Only managers can register a farm.");
         }
 
-        var farm = Farm.Create(ownerId, command.Name, command.Description, command.Location, Now);
+        var farm = Farm.Create(ownerId, command.Name, command.Description, command.Location, Now, command.Latitude, command.Longitude);
 
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         await _dbContext.Database.AcquireAdvisoryLockAsync(ownerId, cancellationToken);
@@ -157,7 +165,7 @@ public sealed class FarmApplicationService : IFarmApplicationService
         farm.EnsureVersion(command.ExpectedVersion);
 
         var previousName = farm.Name;
-        farm.Update(command.Name, command.Description, command.Location, Now);
+        farm.Update(command.Name, command.Description, command.Location, Now, command.Latitude, command.Longitude);
 
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 

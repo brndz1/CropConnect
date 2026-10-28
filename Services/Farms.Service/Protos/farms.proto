@@ -40,6 +40,11 @@ service StockService {
   rpc ReleaseStock (ReleaseStockRequest) returns (StockReservationResponse);
 }
 
+// Internal: lets other services find who owns a farm, including inactive ones.
+service FarmDirectoryService {
+  rpc GetFarmOwnership (GetFarmOwnershipRequest) returns (FarmOwnershipInfo);
+}
+
 enum DayOfWeek {
   DAY_OF_WEEK_UNSPECIFIED = 0;
   DAY_OF_WEEK_SUNDAY = 1;
@@ -67,12 +72,16 @@ message FarmInfo {
   google.protobuf.Timestamp updated_at = 8;
   int32 version = 9;
   repeated PickupScheduleInfo pickup_schedules = 10;
+  optional double latitude = 11;
+  optional double longitude = 12;
 }
 
 message CreateFarmRequest {
   string name = 1;
   string description = 2;
   string location = 3;
+  optional double latitude = 4;
+  optional double longitude = 5;
 }
 
 message GetFarmRequest {
@@ -105,6 +114,8 @@ message UpdateFarmRequest {
   optional string description = 3;
   optional string location = 4;
   optional int32 expected_version = 5;
+  optional double latitude = 6;
+  optional double longitude = 7;
 }
 
 message SetFarmActiveRequest {
@@ -275,4 +286,17 @@ message UpdatePickupScheduleRequest {
 
 message DeletePickupScheduleRequest {
   string id = 1;
+}
+
+message GetFarmOwnershipRequest {
+  string farm_id = 1;
+}
+
+message FarmOwnershipInfo {
+  string farm_id = 1;
+  string owner_id = 2;
+  string name = 3;
+  bool is_active = 4;
+  optional double latitude = 5;
+  optional double longitude = 6;
 }
