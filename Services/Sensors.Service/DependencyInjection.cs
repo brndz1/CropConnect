@@ -88,6 +88,20 @@ public static class DependencyInjection
 
         services.AddScoped<IFarmDirectoryClient, FarmDirectoryClient>();
 
+        services.AddOptions<OpenMeteoOptions>()
+            .BindConfiguration(OpenMeteoOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddHttpClient<IWeatherClient, OpenMeteoClient>((provider, client) =>
+        {
+            var openMeteo = provider.GetRequiredService<IOptions<OpenMeteoOptions>>().Value;
+            client.BaseAddress = new Uri(openMeteo.BaseUrl);
+            client.Timeout = openMeteo.Timeout;
+        });
+
+        services.AddScoped<IAlertWeatherContextService, AlertWeatherContextService>();
+
         services.AddOptions<SensorReadingOptions>()
             .BindConfiguration(SensorReadingOptions.SectionName)
             .ValidateDataAnnotations()

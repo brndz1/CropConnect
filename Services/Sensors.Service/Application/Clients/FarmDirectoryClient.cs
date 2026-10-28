@@ -46,7 +46,9 @@ public sealed class FarmDirectoryClient : IFarmDirectoryClient
                 Guid.Parse(response.FarmId),
                 Guid.Parse(response.OwnerId),
                 response.Name,
-                response.IsActive);
+                response.IsActive,
+                response.HasLatitude ? response.Latitude : null,
+                response.HasLongitude ? response.Longitude : null);
         }
         catch (RpcException ex) when (ex.StatusCode == StatusCode.NotFound)
         {

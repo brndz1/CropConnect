@@ -20,6 +20,7 @@ public sealed class ReadingIngestionService : IReadingIngestionService
     private readonly IFarmDirectoryClient _farms;
     private readonly IThresholdApplicationService _thresholds;
     private readonly IAlertEventPublisher _eventPublisher;
+    private readonly IAlertWeatherContextService _weatherContext;
     private readonly TimeProvider _timeProvider;
     private readonly SensorReadingOptions _options;
     private readonly ILogger<ReadingIngestionService> _logger;
@@ -29,6 +30,7 @@ public sealed class ReadingIngestionService : IReadingIngestionService
         IFarmDirectoryClient farms,
         IThresholdApplicationService thresholds,
         IAlertEventPublisher eventPublisher,
+        IAlertWeatherContextService weatherContext,
         TimeProvider timeProvider,
         IOptions<SensorReadingOptions> options,
         ILogger<ReadingIngestionService> logger)
@@ -37,6 +39,7 @@ public sealed class ReadingIngestionService : IReadingIngestionService
         _farms = farms;
         _thresholds = thresholds;
         _eventPublisher = eventPublisher;
+        _weatherContext = weatherContext;
         _timeProvider = timeProvider;
         _options = options.Value;
         _logger = logger;
@@ -83,6 +86,7 @@ public sealed class ReadingIngestionService : IReadingIngestionService
 
         if (alert is not null)
         {
+            alert.AttachWeatherContext(await _weatherContext.DescribeAsync(alert, farm, cancellationToken));
             _dbContext.Alerts.Add(alert);
             StageAlertRaised(alert, farm);
         }
