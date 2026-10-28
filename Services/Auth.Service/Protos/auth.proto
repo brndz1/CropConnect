@@ -41,6 +41,23 @@ message ValidateTokenResponse {
 }
 
 // RF03: user management by the administrator.
+// Internal lookups for other services (x-api-key), e.g. Notification.Service resolving where to send an email.
+service UserDirectoryService {
+  rpc GetUserContact (GetUserContactRequest) returns (UserContactInfo);
+}
+
+message GetUserContactRequest {
+  string user_id = 1;
+}
+
+message UserContactInfo {
+  string user_id = 1;
+  string username = 2;
+  string email = 3;
+  string role = 4;
+  bool is_active = 5;
+}
+
 service UserAccountsService {
   rpc CreateUser (CreateUserRequest) returns (UserAccountInfo);
   rpc GetUser (GetUserRequest) returns (UserAccountInfo);

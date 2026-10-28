@@ -64,6 +64,7 @@ services:
       <<: [*jwt, *database]
       ConnectionStrings__AuthDb: Host=postgres;Database=auth_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       JwtSettings__ExpirationMinutes: "60"
+      InternalApi__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
       BootstrapAdmin__Username: ${ADMIN_USERNAME:-admin}
       BootstrapAdmin__Email: ${ADMIN_EMAIL:-admin@cropconnect.test}
       BootstrapAdmin__Password: ${ADMIN_PASSWORD:-DevAdmin-ChangeMe-123}
