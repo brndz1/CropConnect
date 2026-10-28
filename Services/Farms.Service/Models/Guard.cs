@@ -26,6 +26,11 @@ public static class Guard
 
     #region Numbers
 
+    public static double Coordinate(double value, string field, double limit) =>
+        double.IsFinite(value) && value >= -limit && value <= limit
+            ? value
+            : throw new InvalidInputException($"{field} must be between {-limit} and {limit}.");
+
     public static decimal Price(decimal value)
     {
         if (value < 0)

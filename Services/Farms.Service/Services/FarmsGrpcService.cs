@@ -59,7 +59,12 @@ public sealed class FarmsGrpcService : FarmsService.FarmsServiceBase
 
     public override async Task<FarmInfo> CreateFarm(CreateFarmRequest request, ServerCallContext context)
     {
-        var command = new CreateFarmCommand(request.Name, request.Description, request.Location);
+        var command = new CreateFarmCommand(
+            request.Name,
+            request.Description,
+            request.Location,
+            request.HasLatitude ? request.Latitude : null,
+            request.HasLongitude ? request.Longitude : null);
         var farm = await _farms.CreateAsync(context.GetCaller(), command, context.CancellationToken);
         return farm.ToProto();
     }
@@ -71,7 +76,9 @@ public sealed class FarmsGrpcService : FarmsService.FarmsServiceBase
             RequestParsing.OptionalText(request.HasName, request.Name),
             RequestParsing.OptionalText(request.HasDescription, request.Description),
             RequestParsing.OptionalText(request.HasLocation, request.Location),
-            RequestParsing.OptionalNumber(request.HasExpectedVersion, request.ExpectedVersion));
+            RequestParsing.OptionalNumber(request.HasExpectedVersion, request.ExpectedVersion),
+            request.HasLatitude ? request.Latitude : null,
+            request.HasLongitude ? request.Longitude : null);
 
         var farm = await _farms.UpdateAsync(context.GetCaller(), command, context.CancellationToken);
         return farm.ToProto();

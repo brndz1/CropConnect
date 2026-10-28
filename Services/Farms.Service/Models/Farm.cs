@@ -14,6 +14,11 @@ public class Farm : VersionedEntity
     public string Description { get; private set; } = string.Empty;
     public string Location { get; private set; } = string.Empty;
 
+    // Optional; the Sensors service uses them to fetch the local weather forecast.
+    public double? Latitude { get; private set; }
+
+    public double? Longitude { get; private set; }
+
     public bool IsActive { get; private set; }
 
     private readonly List<PickupSchedule> _pickupSchedules = [];
@@ -25,7 +30,14 @@ public class Farm : VersionedEntity
 
     #region Factory
 
-    public static Farm Create(Guid ownerId, string name, string? description, string location, DateTime now)
+    public static Farm Create(
+        Guid ownerId,
+        string name,
+        string? description,
+        string location,
+        DateTime now,
+        double? latitude = null,
+        double? longitude = null)
     {
         var farm = new Farm
         {
@@ -36,6 +48,7 @@ public class Farm : VersionedEntity
             IsActive = true
         };
 
+        farm.SetCoordinates(latitude, longitude);
         farm.Initialize(now);
         return farm;
     }
@@ -44,16 +57,38 @@ public class Farm : VersionedEntity
 
     #region Behaviour
 
-    public void Update(string? name, string? description, string? location, DateTime now)
+    public void Update(
+        string? name,
+        string? description,
+        string? location,
+        DateTime now,
+        double? latitude = null,
+        double? longitude = null)
     {
         var newName = name is null ? Name : Guard.Required(name, "Name", FieldLimits.NameMaxLength);
         var newDescription = description is null ? Description : Guard.Optional(description, "Description", FieldLimits.DescriptionMaxLength);
         var newLocation = location is null ? Location : Guard.Required(location, "Location", FieldLimits.LocationMaxLength);
 
+        if (latitude is not null || longitude is not null)
+        {
+            SetCoordinates(latitude, longitude);
+        }
+
         Touch(now);
         Name = newName;
         Description = newDescription;
         Location = newLocation;
+    }
+
+    private void SetCoordinates(double? latitude, double? longitude)
+    {
+        if (latitude is null != longitude is null)
+        {
+            throw new InvalidInputException("Latitude and longitude must be given together.");
+        }
+
+        Latitude = latitude is null ? null : Guard.Coordinate(latitude.Value, "Latitude", 90);
+        Longitude = longitude is null ? null : Guard.Coordinate(longitude.Value, "Longitude", 180);
     }
 
     public void SetActive(bool isActive, DateTime now)

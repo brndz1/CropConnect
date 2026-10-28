@@ -27,13 +27,21 @@ public sealed class FarmDirectoryGrpcService : FarmDirectoryService.FarmDirector
         var farmId = RequestParsing.ParseId(request.FarmId, "Farm ID");
         var farm = await _farms.GetForInternalUseAsync(farmId, context.CancellationToken);
 
-        return new FarmOwnershipInfo
+        var info = new FarmOwnershipInfo
         {
             FarmId = farm.Id.ToString(),
             OwnerId = farm.OwnerId.ToString(),
             Name = farm.Name,
             IsActive = farm.IsActive
         };
+
+        if (farm is { Latitude: { } latitude, Longitude: { } longitude })
+        {
+            info.Latitude = latitude;
+            info.Longitude = longitude;
+        }
+
+        return info;
     }
 
     #endregion

@@ -134,7 +134,7 @@ public sealed class FarmApplicationService : IFarmApplicationService
             throw new ForbiddenException("Only managers can register a farm.");
         }
 
-        var farm = Farm.Create(ownerId, command.Name, command.Description, command.Location, Now);
+        var farm = Farm.Create(ownerId, command.Name, command.Description, command.Location, Now, command.Latitude, command.Longitude);
 
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         await _dbContext.Database.AcquireAdvisoryLockAsync(ownerId, cancellationToken);
@@ -165,7 +165,7 @@ public sealed class FarmApplicationService : IFarmApplicationService
         farm.EnsureVersion(command.ExpectedVersion);
 
         var previousName = farm.Name;
-        farm.Update(command.Name, command.Description, command.Location, Now);
+        farm.Update(command.Name, command.Description, command.Location, Now, command.Latitude, command.Longitude);
 
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 

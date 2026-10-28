@@ -2,14 +2,21 @@ using Farms.Service.Models;
 
 namespace Farms.Service.Application;
 
-public sealed record CreateFarmCommand(string Name, string? Description, string Location);
+public sealed record CreateFarmCommand(
+    string Name,
+    string? Description,
+    string Location,
+    double? Latitude = null,
+    double? Longitude = null);
 
 public sealed record UpdateFarmCommand(
     Guid FarmId,
     string? Name,
     string? Description,
     string? Location,
-    int? ExpectedVersion);
+    int? ExpectedVersion,
+    double? Latitude = null,
+    double? Longitude = null);
 
 public sealed record FarmQuery(PageRequest Page, bool IncludeInactive, string? Search, Guid? OwnerId);
 
