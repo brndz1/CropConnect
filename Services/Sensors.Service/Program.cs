@@ -31,6 +31,7 @@ app.UseAuthorization();
 #region Endpoints
 
 app.MapGrpcService<ThresholdsGrpcService>();
+app.MapGrpcService<SensorReadingsGrpcService>();
 app.MapDefaultEndpoints();
 
 #endregion

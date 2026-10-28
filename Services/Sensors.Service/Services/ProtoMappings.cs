@@ -1,4 +1,5 @@
 using Google.Protobuf.WellKnownTypes;
+using Sensors.Service.Application;
 using Sensors.Service.Models;
 using Sensors.Service.Protos;
 using SensorTypeProto = Sensors.Service.Protos.SensorType;
@@ -42,6 +43,70 @@ public static class ProtoMappings
         var response = new ListThresholdsResponse();
         response.Thresholds.AddRange(thresholds.Select(t => t.ToProto()));
         return response;
+    }
+
+    #endregion
+
+    #region Readings
+
+    public static ReadingInfo ToProto(this SensorReading reading) => new()
+    {
+        Id = reading.Id.ToString(),
+        FarmId = reading.FarmId.ToString(),
+        SensorId = reading.SensorId,
+        Type = reading.Type.ToProto(),
+        Value = reading.Value,
+        Unit = reading.Type.Unit(),
+        Timestamp = reading.Timestamp.ToTimestamp(),
+        ReceivedAt = reading.ReceivedAt.ToTimestamp()
+    };
+
+    public static RecordReadingResponse ToProto(this RecordReadingResult result)
+    {
+        var response = new RecordReadingResponse
+        {
+            Reading = result.Reading.ToProto(),
+            AlreadyProcessed = result.AlreadyProcessed
+        };
+
+        if (result.Alert is { } alert)
+        {
+            response.Alert = alert.ToProto();
+        }
+
+        return response;
+    }
+
+    #endregion
+
+    #region Alerts
+
+    public static AlertInfo ToProto(this Alert alert)
+    {
+        var info = new AlertInfo
+        {
+            Id = alert.Id.ToString(),
+            FarmId = alert.FarmId.ToString(),
+            Type = alert.Type.ToProto(),
+            Value = alert.Value,
+            MinValue = alert.MinValue,
+            MaxValue = alert.MaxValue,
+            Unit = alert.Type.Unit(),
+            Description = alert.Description,
+            CreatedAt = alert.CreatedAt.ToTimestamp()
+        };
+
+        if (alert.WeatherContext is { } weatherContext)
+        {
+            info.WeatherContext = weatherContext;
+        }
+
+        if (alert.AcknowledgedAt is { } acknowledgedAt)
+        {
+            info.AcknowledgedAt = acknowledgedAt.ToTimestamp();
+        }
+
+        return info;
     }
 
     #endregion

@@ -1,3 +1,4 @@
+using Google.Protobuf.WellKnownTypes;
 using Sensors.Service.Models;
 
 namespace Sensors.Service.Services;
@@ -17,4 +18,10 @@ public static class RequestParsing
 
     public static int? OptionalNumber(bool hasValue, int value) =>
         hasValue ? value : null;
+
+    public static DateTime RequiredTimestamp(Timestamp? value, string field) =>
+        value?.ToDateTime() ?? throw new InvalidInputException($"{field} is required.");
+
+    public static DateTime? OptionalTimestamp(Timestamp? value) =>
+        value?.ToDateTime();
 }

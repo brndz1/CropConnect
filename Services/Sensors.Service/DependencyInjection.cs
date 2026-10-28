@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Farms.Service.Protos;
 using Sensors.Service.Application;
 using Sensors.Service.Application.Clients;
+using Sensors.Service.Application.Events;
 using Sensors.Service.Data;
 using Sensors.Service.Services;
 
@@ -65,7 +66,14 @@ public static class DependencyInjection
 
         services.AddScoped<IFarmDirectoryClient, FarmDirectoryClient>();
 
+        services.AddOptions<SensorReadingOptions>()
+            .BindConfiguration(SensorReadingOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.AddScoped<IThresholdApplicationService, ThresholdApplicationService>();
+        services.AddScoped<IReadingIngestionService, ReadingIngestionService>();
+        services.AddScoped<IAlertEventPublisher, LoggingAlertEventPublisher>();
 
         return services;
     }
