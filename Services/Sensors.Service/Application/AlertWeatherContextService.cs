@@ -53,11 +53,11 @@ public sealed class AlertWeatherContextService : IAlertWeatherContextService
 
     private static string Describe(PrecipitationForecast forecast)
     {
-        var probability = forecast.MaxProbabilityPercent is { } percent ? $" (up to {percent}% chance)" : string.Empty;
+        var probability = forecast.MaxProbabilityPercent is { } percent ? $", up to {percent}% chance" : string.Empty;
 
         return forecast.TotalMillimetres >= RainThresholdMillimetres
             ? string.Create(CultureInfo.InvariantCulture,
-                $"Rain forecast: {forecast.TotalMillimetres:0.#} mm in the next {forecast.Hours}h{probability}; irrigation may not be needed.")
+                $"Rain forecast in the next {forecast.Hours}h ({forecast.TotalMillimetres:0.#} mm{probability}); irrigation may not be needed.")
             : string.Create(CultureInfo.InvariantCulture,
                 $"No significant rain forecast in the next {forecast.Hours}h ({forecast.TotalMillimetres:0.#} mm{probability}); consider irrigating.");
     }
