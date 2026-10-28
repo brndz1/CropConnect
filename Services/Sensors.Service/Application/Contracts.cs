@@ -21,3 +21,11 @@ public sealed record RecordReadingCommand(
 public sealed record RecordReadingResult(SensorReading Reading, bool AlreadyProcessed, Alert? Alert);
 
 #endregion
+
+#region Queries
+
+public sealed record ReadingQuery(Guid FarmId, SensorType? Type, DateTime? From, DateTime? To, PageRequest Page);
+
+public sealed record AlertQuery(Guid FarmId, bool OnlyOpen, DateTime? From, DateTime? To, PageRequest Page);
+
+#endregion

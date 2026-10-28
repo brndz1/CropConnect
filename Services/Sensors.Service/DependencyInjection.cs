@@ -73,6 +73,7 @@ public static class DependencyInjection
 
         services.AddScoped<IThresholdApplicationService, ThresholdApplicationService>();
         services.AddScoped<IReadingIngestionService, ReadingIngestionService>();
+        services.AddScoped<ITelemetryQueryService, TelemetryQueryService>();
         services.AddScoped<IAlertEventPublisher, LoggingAlertEventPublisher>();
 
         return services;

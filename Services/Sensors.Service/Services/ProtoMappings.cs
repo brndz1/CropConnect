@@ -61,6 +61,13 @@ public static class ProtoMappings
         ReceivedAt = reading.ReceivedAt.ToTimestamp()
     };
 
+    public static ListReadingsResponse ToProto(this PagedResult<SensorReading> page)
+    {
+        var response = new ListReadingsResponse { TotalCount = page.TotalCount, Page = page.Page, PageSize = page.PageSize };
+        response.Readings.AddRange(page.Items.Select(r => r.ToProto()));
+        return response;
+    }
+
     public static RecordReadingResponse ToProto(this RecordReadingResult result)
     {
         var response = new RecordReadingResponse
@@ -107,6 +114,13 @@ public static class ProtoMappings
         }
 
         return info;
+    }
+
+    public static ListAlertsResponse ToProto(this PagedResult<Alert> page)
+    {
+        var response = new ListAlertsResponse { TotalCount = page.TotalCount, Page = page.Page, PageSize = page.PageSize };
+        response.Alerts.AddRange(page.Items.Select(a => a.ToProto()));
+        return response;
     }
 
     #endregion
