@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using Sensors.Service.Application;
 using Sensors.Service.Data;
 using Sensors.Service.Services;
 
@@ -41,6 +42,15 @@ public static class DependencyInjection
 
         services.AddHealthChecks().AddCheck<SensorsDbHealthCheck>("sensors-db");
         services.TryAddSingleton(TimeProvider.System);
+
+        return services;
+    }
+
+    public static IServiceCollection AddSensorsApplication(this IServiceCollection services)
+    {
+        services.AddMemoryCache();
+
+        services.AddScoped<IThresholdApplicationService, ThresholdApplicationService>();
 
         return services;
     }

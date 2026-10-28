@@ -1,6 +1,7 @@
 using Sensors.Service;
 using Sensors.Service.Data;
 using Sensors.Service.Security;
+using Sensors.Service.Services;
 
 #region Services
 
@@ -11,7 +12,8 @@ builder.AddServiceDefaults();
 builder.Services
     .AddSensorsApi(builder.Environment)
     .AddSensorsSecurity()
-    .AddSensorsInfrastructure(builder.Environment);
+    .AddSensorsInfrastructure(builder.Environment)
+    .AddSensorsApplication();
 
 #endregion
 
@@ -28,6 +30,7 @@ app.UseAuthorization();
 
 #region Endpoints
 
+app.MapGrpcService<ThresholdsGrpcService>();
 app.MapDefaultEndpoints();
 
 #endregion
