@@ -1,0 +1,137 @@
+syntax = "proto3";
+
+option csharp_namespace = "Sensors.Service.Protos";
+
+package sensors.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// RF04: global alert thresholds, configured by the administrator.
+service ThresholdsService {
+  rpc ListThresholds (google.protobuf.Empty) returns (ListThresholdsResponse);
+  rpc UpdateThreshold (UpdateThresholdRequest) returns (ThresholdInfo);
+}
+
+// RF16 and RF18: sensor readings, visible only to the farm's manager.
+service SensorReadingsService {
+  rpc RecordReading (RecordReadingRequest) returns (RecordReadingResponse);
+  rpc ListReadings (ListReadingsRequest) returns (ListReadingsResponse);
+  rpc GetLatestReadings (GetLatestReadingsRequest) returns (GetLatestReadingsResponse);
+}
+
+// RF17 and RF21: alerts raised by out-of-range readings.
+service AlertsService {
+  rpc ListAlerts (ListAlertsRequest) returns (ListAlertsResponse);
+  rpc AcknowledgeAlert (AcknowledgeAlertRequest) returns (AlertInfo);
+}
+
+enum SensorType {
+  SENSOR_TYPE_UNSPECIFIED = 0;
+  SENSOR_TYPE_HUMIDITY = 1;
+  SENSOR_TYPE_TEMPERATURE = 2;
+}
+
+message ThresholdInfo {
+  SensorType type = 1;
+  double min_value = 2;
+  double max_value = 3;
+  string unit = 4;
+  google.protobuf.Timestamp updated_at = 5;
+  int32 version = 6;
+}
+
+message ListThresholdsResponse {
+  repeated ThresholdInfo thresholds = 1;
+}
+
+message UpdateThresholdRequest {
+  SensorType type = 1;
+  double min_value = 2;
+  double max_value = 3;
+  optional int32 expected_version = 4;
+}
+
+message ReadingInfo {
+  string id = 1;
+  string farm_id = 2;
+  string sensor_id = 3;
+  SensorType type = 4;
+  double value = 5;
+  string unit = 6;
+  google.protobuf.Timestamp timestamp = 7;
+  google.protobuf.Timestamp received_at = 8;
+}
+
+message RecordReadingRequest {
+  string message_id = 1;
+  string farm_id = 2;
+  string sensor_id = 3;
+  SensorType type = 4;
+  double value = 5;
+  google.protobuf.Timestamp timestamp = 6;
+}
+
+message RecordReadingResponse {
+  ReadingInfo reading = 1;
+  bool already_processed = 2;
+  AlertInfo alert = 3;
+}
+
+message ListReadingsRequest {
+  string farm_id = 1;
+  optional SensorType type = 2;
+  google.protobuf.Timestamp from = 3;
+  google.protobuf.Timestamp to = 4;
+  int32 page = 5;
+  int32 page_size = 6;
+}
+
+message ListReadingsResponse {
+  repeated ReadingInfo readings = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message GetLatestReadingsRequest {
+  string farm_id = 1;
+}
+
+message GetLatestReadingsResponse {
+  repeated ReadingInfo readings = 1;
+}
+
+message AlertInfo {
+  string id = 1;
+  string farm_id = 2;
+  SensorType type = 3;
+  double value = 4;
+  double min_value = 5;
+  double max_value = 6;
+  string unit = 7;
+  string description = 8;
+  optional string weather_context = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp acknowledged_at = 11;
+}
+
+message ListAlertsRequest {
+  string farm_id = 1;
+  bool only_open = 2;
+  google.protobuf.Timestamp from = 3;
+  google.protobuf.Timestamp to = 4;
+  int32 page = 5;
+  int32 page_size = 6;
+}
+
+message ListAlertsResponse {
+  repeated AlertInfo alerts = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message AcknowledgeAlertRequest {
+  string id = 1;
+}
