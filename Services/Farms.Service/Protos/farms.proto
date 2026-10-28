@@ -40,6 +40,11 @@ service StockService {
   rpc ReleaseStock (ReleaseStockRequest) returns (StockReservationResponse);
 }
 
+// Internal: lets other services find who owns a farm, including inactive ones.
+service FarmDirectoryService {
+  rpc GetFarmOwnership (GetFarmOwnershipRequest) returns (FarmOwnershipInfo);
+}
+
 enum DayOfWeek {
   DAY_OF_WEEK_UNSPECIFIED = 0;
   DAY_OF_WEEK_SUNDAY = 1;
@@ -275,4 +280,15 @@ message UpdatePickupScheduleRequest {
 
 message DeletePickupScheduleRequest {
   string id = 1;
+}
+
+message GetFarmOwnershipRequest {
+  string farm_id = 1;
+}
+
+message FarmOwnershipInfo {
+  string farm_id = 1;
+  string owner_id = 2;
+  string name = 3;
+  bool is_active = 4;
 }

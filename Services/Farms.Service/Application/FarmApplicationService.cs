@@ -15,6 +15,8 @@ public interface IFarmApplicationService
 
     Task<PagedResult<Farm>> ListMineAsync(Caller caller, PageRequest page, CancellationToken cancellationToken);
 
+    Task<Farm> GetForInternalUseAsync(Guid farmId, CancellationToken cancellationToken);
+
     #endregion
 
     #region Commands
@@ -112,6 +114,12 @@ public sealed class FarmApplicationService : IFarmApplicationService
             .ThenBy(f => f.Id)
             .ToPagedResultAsync(page, cancellationToken);
     }
+
+    // Only reachable through the internal API key: unlike GetAsync, it also returns inactive farms.
+    public async Task<Farm> GetForInternalUseAsync(Guid farmId, CancellationToken cancellationToken) =>
+        await _dbContext.Farms.AsNoTracking()
+            .FirstOrDefaultAsync(f => f.Id == farmId && !f.IsDeleted, cancellationToken)
+        ?? throw new NotFoundException(ErrorMessages.FarmNotFound);
 
     #endregion
 
