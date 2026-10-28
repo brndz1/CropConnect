@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using Farms.Service.Protos;
 using Sensors.Service.Application;
+using Sensors.Service.Application.Clients;
 using Sensors.Service.Data;
 using Sensors.Service.Services;
 
@@ -49,6 +51,19 @@ public static class DependencyInjection
     public static IServiceCollection AddSensorsApplication(this IServiceCollection services)
     {
         services.AddMemoryCache();
+
+        services.AddOptions<FarmDirectoryClientOptions>()
+            .BindConfiguration(FarmDirectoryClientOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddGrpcClient<FarmDirectoryService.FarmDirectoryServiceClient>((provider, options) =>
+        {
+            var farmOptions = provider.GetRequiredService<IOptions<FarmDirectoryClientOptions>>().Value;
+            options.Address = new Uri(farmOptions.Url);
+        });
+
+        services.AddScoped<IFarmDirectoryClient, FarmDirectoryClient>();
 
         services.AddScoped<IThresholdApplicationService, ThresholdApplicationService>();
 

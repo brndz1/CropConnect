@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Protobuf Include="Protos\sensors.proto" GrpcServices="Server" />
+    <Protobuf Include="..\Farms.Service\Protos\farms.proto" GrpcServices="Client" Link="Protos\farms.proto" />
   </ItemGroup>
 
   <ItemGroup>
