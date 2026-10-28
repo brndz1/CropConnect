@@ -1,0 +1,156 @@
+# Local environment with every service, PostgreSQL and RabbitMQ:
+#   docker compose up -d --build
+# The defaults are for development only; override them in a .env file (see .env.example).
+
+name: cropconnect
+
+x-service: &service
+  restart: unless-stopped
+  networks: [cropconnect]
+
+x-jwt: &jwt
+  JwtSettings__Secret: ${JWT_SECRET:-SuperSecretKeyForDevelopmentOnly12345!}
+  JwtSettings__Issuer: CropConnect.Auth
+  JwtSettings__Audience: CropConnect.Clients
+
+x-database: &database
+  Database__ApplyMigrationsOnStartup: "true"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    networks: [cropconnect]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5440}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    restart: unless-stopped
+    networks: [cropconnect]
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "${RABBITMQ_PORT:-5673}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15673}:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  auth-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Services/Auth.Service/Dockerfile
+    image: cropconnect/auth-service
+    ports:
+      - "5298:8080"
+    environment:
+      <<: [*jwt, *database]
+      ConnectionStrings__AuthDb: Host=postgres;Database=auth_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      JwtSettings__ExpirationMinutes: "60"
+      BootstrapAdmin__Username: ${ADMIN_USERNAME:-admin}
+      BootstrapAdmin__Email: ${ADMIN_EMAIL:-admin@cropconnect.test}
+      BootstrapAdmin__Password: ${ADMIN_PASSWORD:-DevAdmin-ChangeMe-123}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  users-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Services/Users.Service/Dockerfile
+    image: cropconnect/users-service
+    ports:
+      - "5001:8080"
+    environment:
+      <<: [*jwt, *database]
+      ConnectionStrings__UsersDb: Host=postgres;Database=users_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  farms-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Services/Farms.Service/Dockerfile
+    image: cropconnect/farms-service
+    ports:
+      - "5002:8080"
+    environment:
+      <<: [*jwt, *database]
+      ConnectionStrings__FarmsDb: Host=postgres;Database=farms_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      InternalApi__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  orders-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Services/Orders.Service/Dockerfile
+    image: cropconnect/orders-service
+    ports:
+      - "5003:8080"
+    environment:
+      <<: [*jwt, *database]
+      ConnectionStrings__OrdersDb: Host=postgres;Database=orders_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      InternalApi__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
+      FarmsService__Url: http://farms-service:8080
+      FarmsService__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      farms-service:
+        condition: service_started
+
+  sensors-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Services/Sensors.Service/Dockerfile
+    image: cropconnect/sensors-service
+    ports:
+      - "5004:8080"
+    environment:
+      <<: [*jwt, *database]
+      ConnectionStrings__SensorsDb: Host=postgres;Database=sensors_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      InternalApi__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
+      FarmsService__Url: http://farms-service:8080
+      FarmsService__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: "5672"
+      RabbitMq__UserName: ${RABBITMQ_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:-guest}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      farms-service:
+        condition: service_started
+
+networks:
+  cropconnect:
+
+volumes:
+  postgres-data:
+  rabbitmq-data:

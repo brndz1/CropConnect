@@ -11,10 +11,10 @@ publishes one reading per farm and sensor type to RabbitMQ, which `Sensors.Servi
 
 ## Run
 
-1. Start RabbitMQ and Node-RED (the ports avoid clashing with other local brokers):
+1. Start the platform with `docker compose up -d` from the repository root (it includes RabbitMQ on
+   port 5673), then start Node-RED:
 
    ```bash
-   docker run -d --name cropconnect-rabbitmq -p 5673:5672 -p 15673:15672 rabbitmq:4-management
    docker run -d --name cropconnect-nodered -p 1881:1880 nodered/node-red
    ```
 
