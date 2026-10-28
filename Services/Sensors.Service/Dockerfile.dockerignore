@@ -1,0 +1,9 @@
+# Used by BuildKit for Services/Sensors.Service/Dockerfile (context: repository root).
+# Later rules win, so the build outputs are excluded after the service folder is included.
+*
+!CropConnect.ServiceDefaults/
+!Services/Sensors.Service/
+!Services/Farms.Service/Protos/farms.proto
+**/bin/
+**/obj/
+**/*.user
