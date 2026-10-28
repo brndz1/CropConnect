@@ -21,25 +21,23 @@ public sealed class RabbitMqConnectionProvider : IAsyncDisposable
 
     #region Connection
 
+    // Once created, the connection is never replaced: while the broker is down it recovers by itself,
+    // together with the consumer's channel. Replacing it would orphan that channel, so callers
+    // just get errors until it is back and retry.
     public async Task<IConnection> GetConnectionAsync(CancellationToken cancellationToken)
     {
-        if (_connection is { IsOpen: true } open)
+        if (_connection is not null)
         {
-            return open;
+            return _connection;
         }
 
         await _lock.WaitAsync(cancellationToken);
 
         try
         {
-            if (_connection is { IsOpen: true } connected)
-            {
-                return connected;
-            }
-
             if (_connection is not null)
             {
-                await _connection.DisposeAsync();
+                return _connection;
             }
 
             var factory = new ConnectionFactory
