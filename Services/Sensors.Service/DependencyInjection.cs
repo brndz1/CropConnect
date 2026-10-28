@@ -2,11 +2,23 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Sensors.Service.Data;
+using Sensors.Service.Services;
 
 namespace Sensors.Service;
 
 public static class DependencyInjection
 {
+    public static IServiceCollection AddSensorsApi(this IServiceCollection services, IHostEnvironment environment)
+    {
+        services.AddGrpc(options =>
+        {
+            options.EnableDetailedErrors = environment.IsDevelopment();
+            options.Interceptors.Add<ExceptionMappingInterceptor>();
+        });
+
+        return services;
+    }
+
     public static IServiceCollection AddSensorsInfrastructure(this IServiceCollection services, IHostEnvironment environment)
     {
         services.AddOptions<DatabaseOptions>()

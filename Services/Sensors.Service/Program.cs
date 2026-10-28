@@ -1,5 +1,6 @@
 using Sensors.Service;
 using Sensors.Service.Data;
+using Sensors.Service.Security;
 
 #region Services
 
@@ -7,9 +8,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.Services.AddGrpc();
-
 builder.Services
+    .AddSensorsApi(builder.Environment)
+    .AddSensorsSecurity()
     .AddSensorsInfrastructure(builder.Environment);
 
 #endregion
@@ -19,6 +20,9 @@ builder.Services
 var app = builder.Build();
 
 await app.ApplyMigrationsIfConfiguredAsync();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 #endregion
 
