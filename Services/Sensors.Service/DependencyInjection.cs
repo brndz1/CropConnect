@@ -58,6 +58,7 @@ public static class DependencyInjection
             .ValidateOnStart();
 
         services.AddSingleton<RabbitMqConnectionProvider>();
+        services.AddHostedService<SensorReadingConsumer>();
         services.AddHealthChecks().AddCheck<RabbitMqHealthCheck>("rabbitmq");
 
         return services;
