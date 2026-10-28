@@ -116,8 +116,14 @@ services:
       InternalApi__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
       FarmsService__Url: http://farms-service:8080
       FarmsService__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: "5672"
+      RabbitMq__UserName: ${RABBITMQ_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:-guest}
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
       farms-service:
         condition: service_started

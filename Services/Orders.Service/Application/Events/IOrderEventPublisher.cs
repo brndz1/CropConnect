@@ -1,44 +1,53 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Orders.Service.Data;
+using Orders.Service.Messaging;
+using Orders.Service.Models;
+
 namespace Orders.Service.Application.Events;
 
+// Each method stages the event in the current unit of work; it is only sent once SaveChanges commits it,
+// together with the order change that produced it.
 public interface IOrderEventPublisher
 {
-    Task PublishOrderCreatedAsync(OrderCreatedEvent @event, CancellationToken cancellationToken);
+    void StageOrderCreated(OrderCreatedEvent @event);
 
-    Task PublishOrderStatusChangedAsync(OrderStatusChangedEvent @event, CancellationToken cancellationToken);
+    void StageOrderStatusChanged(OrderStatusChangedEvent @event);
 
-    Task PublishOrderCancelledAsync(OrderCancelledEvent @event, CancellationToken cancellationToken);
+    void StageOrderCancelled(OrderCancelledEvent @event);
 }
 
-public sealed class LoggingOrderEventPublisher : IOrderEventPublisher
+public sealed class OutboxOrderEventPublisher : IOrderEventPublisher
 {
-    private readonly ILogger<LoggingOrderEventPublisher> _logger;
+    public const string OrderCreatedEventType = "OrderCreated";
+    public const string OrderStatusChangedEventType = "OrderStatusChanged";
+    public const string OrderCancelledEventType = "OrderCancelled";
 
-    public LoggingOrderEventPublisher(ILogger<LoggingOrderEventPublisher> logger)
+    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
     {
-        _logger = logger;
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+    };
+
+    private readonly OrdersDbContext _dbContext;
+
+    public OutboxOrderEventPublisher(OrdersDbContext dbContext)
+    {
+        _dbContext = dbContext;
     }
 
-    public Task PublishOrderCreatedAsync(OrderCreatedEvent @event, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation(
-            "Event Published: OrderCreated [OrderId: {OrderId}, FarmId: {FarmId}, Total: {Total}]",
-            @event.OrderId, @event.FarmId, @event.TotalAmount);
-        return Task.CompletedTask;
-    }
+    public void StageOrderCreated(OrderCreatedEvent @event) =>
+        Stage(OrderCreatedEventType, MessagingTopology.OrderCreatedRoutingKey, @event, @event.OccurredAt);
 
-    public Task PublishOrderStatusChangedAsync(OrderStatusChangedEvent @event, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation(
-            "Event Published: OrderStatusChanged [OrderId: {OrderId}, From: {PreviousStatus}, To: {NewStatus}]",
-            @event.OrderId, @event.PreviousStatus, @event.NewStatus);
-        return Task.CompletedTask;
-    }
+    public void StageOrderStatusChanged(OrderStatusChangedEvent @event) =>
+        Stage(OrderStatusChangedEventType, MessagingTopology.OrderStatusChangedRoutingKey, @event, @event.OccurredAt);
 
-    public Task PublishOrderCancelledAsync(OrderCancelledEvent @event, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation(
-            "Event Published: OrderCancelled [OrderId: {OrderId}, Reason: {Reason}]",
-            @event.OrderId, @event.Reason ?? "none");
-        return Task.CompletedTask;
-    }
+    public void StageOrderCancelled(OrderCancelledEvent @event) =>
+        Stage(OrderCancelledEventType, MessagingTopology.OrderCancelledRoutingKey, @event, @event.OccurredAt);
+
+    private void Stage<TEvent>(string eventType, string routingKey, TEvent @event, DateTime occurredAt) =>
+        _dbContext.OutboxMessages.Add(OutboxMessage.Create(
+            eventType,
+            routingKey,
+            JsonSerializer.Serialize(@event, SerializerOptions),
+            occurredAt));
 }

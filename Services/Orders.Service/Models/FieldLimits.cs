@@ -9,4 +9,7 @@ public static class FieldLimits
     public const int MoneyPrecision = 18;
     public const int MoneyScale = 2;
     public const decimal MaxPrice = 999_999.99m;
+    public const int EventTypeMaxLength = 100;
+    public const int RoutingKeyMaxLength = 255;
+    public const int OutboxErrorMaxLength = 1000;
 }

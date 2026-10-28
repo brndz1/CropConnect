@@ -13,6 +13,7 @@ builder.Services
     .AddOrdersApi(builder.Environment)
     .AddOrdersSecurity()
     .AddOrdersInfrastructure(builder.Environment)
+    .AddOrdersMessaging()
     .AddOrdersApplication();
 
 #endregion

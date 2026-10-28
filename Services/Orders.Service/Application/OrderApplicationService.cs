@@ -92,6 +92,15 @@ public sealed class OrderApplicationService : IOrderApplicationService
             await _stockClient.ConfirmStockAsync(orderId, cancellationToken);
 
             _dbContext.Orders.Add(order);
+            _eventPublisher.StageOrderCreated(new OrderCreatedEvent(
+                order.Id,
+                order.CustomerId,
+                order.FarmId,
+                order.FarmOwnerId,
+                order.TotalAmount,
+                order.Items.Count,
+                now));
+
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -108,16 +117,6 @@ public sealed class OrderApplicationService : IOrderApplicationService
 
             throw;
         }
-
-        await _eventPublisher.PublishOrderCreatedAsync(
-            new OrderCreatedEvent(
-                order.Id,
-                order.CustomerId,
-                order.FarmId,
-                order.FarmOwnerId,
-                order.TotalAmount,
-                now),
-            cancellationToken);
 
         return ToResult(order);
     }
@@ -260,11 +259,10 @@ public sealed class OrderApplicationService : IOrderApplicationService
                 throw new InvalidInputException($"Unsupported target status '{command.NewStatus}'.");
         }
 
-        await _dbContext.SaveChangesOrConflictAsync(order, cancellationToken);
+        _eventPublisher.StageOrderStatusChanged(
+            new OrderStatusChangedEvent(order.Id, order.CustomerId, order.FarmId, order.FarmOwnerId, previousStatus, order.Status, now));
 
-        await _eventPublisher.PublishOrderStatusChangedAsync(
-            new OrderStatusChangedEvent(order.Id, order.CustomerId, order.FarmId, order.FarmOwnerId, previousStatus, order.Status, now),
-            cancellationToken);
+        await _dbContext.SaveChangesOrConflictAsync(order, cancellationToken);
 
         return ToResult(order);
     }
@@ -296,17 +294,24 @@ public sealed class OrderApplicationService : IOrderApplicationService
         CancellationToken cancellationToken)
     {
         var now = Now;
+        var previousStatus = order.Status;
 
         order.Cancel(reason, isManagerOrAdmin, now);
+        _eventPublisher.StageOrderCancelled(new OrderCancelledEvent(
+            order.Id,
+            order.CustomerId,
+            order.FarmId,
+            order.FarmOwnerId,
+            previousStatus,
+            order.CancellationReason,
+            CancelledByCustomer: !isManagerOrAdmin,
+            now));
+
         await _dbContext.SaveChangesOrConflictAsync(order, cancellationToken);
 
         // The cancellation is already committed, so a Farms failure must not fail the request:
         // StockReleaseWorker retries the release until it succeeds.
         await TryReleaseStockAsync(order, cancellationToken);
-
-        await _eventPublisher.PublishOrderCancelledAsync(
-            new OrderCancelledEvent(order.Id, order.CustomerId, order.FarmId, order.FarmOwnerId, order.CancellationReason, now),
-            cancellationToken);
 
         return ToResult(order);
     }

@@ -5,6 +5,7 @@ using Orders.Service.Application;
 using Orders.Service.Application.Clients;
 using Orders.Service.Application.Events;
 using Orders.Service.Data;
+using Orders.Service.Messaging;
 using Orders.Service.Services;
 using Farms.Service.Protos;
 
@@ -49,6 +50,26 @@ public static class DependencyInjection
         return services;
     }
 
+    public static IServiceCollection AddOrdersMessaging(this IServiceCollection services)
+    {
+        services.AddOptions<RabbitMqOptions>()
+            .BindConfiguration(RabbitMqOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddSingleton<RabbitMqConnectionProvider>();
+
+        services.AddOptions<OutboxOptions>()
+            .BindConfiguration(OutboxOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddHostedService<OutboxPublisher>();
+        services.AddHealthChecks().AddCheck<RabbitMqHealthCheck>("rabbitmq");
+
+        return services;
+    }
+
     public static IServiceCollection AddOrdersApplication(this IServiceCollection services)
     {
         services.AddOptions<OrderOptions>()
@@ -68,7 +89,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IFarmStockClient, FarmStockClient>();
-        services.AddScoped<IOrderEventPublisher, LoggingOrderEventPublisher>();
+        services.AddScoped<IOrderEventPublisher, OutboxOrderEventPublisher>();
         services.AddScoped<IOrderApplicationService, OrderApplicationService>();
         services.AddScoped<IReviewApplicationService, ReviewApplicationService>();
         services.AddHostedService<StockReleaseWorker>();
