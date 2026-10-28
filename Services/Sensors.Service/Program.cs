@@ -13,6 +13,7 @@ builder.Services
     .AddSensorsApi(builder.Environment)
     .AddSensorsSecurity()
     .AddSensorsInfrastructure(builder.Environment)
+    .AddSensorsMessaging()
     .AddSensorsApplication();
 
 #endregion

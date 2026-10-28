@@ -6,6 +6,7 @@ using Sensors.Service.Application;
 using Sensors.Service.Application.Clients;
 using Sensors.Service.Application.Events;
 using Sensors.Service.Data;
+using Sensors.Service.Messaging;
 using Sensors.Service.Services;
 
 namespace Sensors.Service;
@@ -45,6 +46,19 @@ public static class DependencyInjection
 
         services.AddHealthChecks().AddCheck<SensorsDbHealthCheck>("sensors-db");
         services.TryAddSingleton(TimeProvider.System);
+
+        return services;
+    }
+
+    public static IServiceCollection AddSensorsMessaging(this IServiceCollection services)
+    {
+        services.AddOptions<RabbitMqOptions>()
+            .BindConfiguration(RabbitMqOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddSingleton<RabbitMqConnectionProvider>();
+        services.AddHealthChecks().AddCheck<RabbitMqHealthCheck>("rabbitmq");
 
         return services;
     }
