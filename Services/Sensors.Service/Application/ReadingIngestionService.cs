@@ -84,8 +84,10 @@ public sealed class ReadingIngestionService : IReadingIngestionService
         if (alert is not null)
         {
             _dbContext.Alerts.Add(alert);
+            StageAlertRaised(alert, farm);
         }
 
+        // The reading, its alert and the alert event are committed together.
         try
         {
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -101,7 +103,6 @@ public sealed class ReadingIngestionService : IReadingIngestionService
         if (alert is not null)
         {
             _logger.LogInformation("Alert {AlertId} raised for farm {FarmId}: {Description}", alert.Id, alert.FarmId, alert.Description);
-            await PublishAlertRaisedAsync(alert, farm, cancellationToken);
         }
 
         return new RecordReadingResult(reading, AlreadyProcessed: false, alert);
@@ -145,8 +146,8 @@ public sealed class ReadingIngestionService : IReadingIngestionService
             cancellationToken);
     }
 
-    private Task PublishAlertRaisedAsync(Alert alert, FarmOwnership farm, CancellationToken cancellationToken) =>
-        _eventPublisher.PublishAlertRaisedAsync(
+    private void StageAlertRaised(Alert alert, FarmOwnership farm) =>
+        _eventPublisher.StageAlertRaised(
             new SensorAlertRaisedEvent(
                 alert.Id,
                 alert.FarmId,
@@ -159,8 +160,7 @@ public sealed class ReadingIngestionService : IReadingIngestionService
                 alert.Type.Unit(),
                 alert.Description,
                 alert.WeatherContext,
-                alert.CreatedAt),
-            cancellationToken);
+                alert.CreatedAt));
 
     #endregion
 }

@@ -15,6 +15,8 @@ public class SensorsDbContext : DbContext
 
     public DbSet<Alert> Alerts => Set<Alert>();
 
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

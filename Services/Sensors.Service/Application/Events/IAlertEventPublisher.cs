@@ -1,24 +1,37 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Sensors.Service.Data;
+using Sensors.Service.Messaging;
+using Sensors.Service.Models;
+
 namespace Sensors.Service.Application.Events;
 
 public interface IAlertEventPublisher
 {
-    Task PublishAlertRaisedAsync(SensorAlertRaisedEvent @event, CancellationToken cancellationToken);
+    // Stages the event in the current unit of work; it is only sent once SaveChanges commits it.
+    void StageAlertRaised(SensorAlertRaisedEvent @event);
 }
 
-public sealed class LoggingAlertEventPublisher : IAlertEventPublisher
+public sealed class OutboxAlertEventPublisher : IAlertEventPublisher
 {
-    private readonly ILogger<LoggingAlertEventPublisher> _logger;
+    public const string AlertRaisedEventType = "SensorAlertRaised";
 
-    public LoggingAlertEventPublisher(ILogger<LoggingAlertEventPublisher> logger)
+    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
     {
-        _logger = logger;
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+    };
+
+    private readonly SensorsDbContext _dbContext;
+
+    public OutboxAlertEventPublisher(SensorsDbContext dbContext)
+    {
+        _dbContext = dbContext;
     }
 
-    public Task PublishAlertRaisedAsync(SensorAlertRaisedEvent @event, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation(
-            "Event Published: SensorAlertRaised [AlertId: {AlertId}, FarmId: {FarmId}, {Description}]",
-            @event.AlertId, @event.FarmId, @event.Description);
-        return Task.CompletedTask;
-    }
+    public void StageAlertRaised(SensorAlertRaisedEvent @event) =>
+        _dbContext.OutboxMessages.Add(OutboxMessage.Create(
+            AlertRaisedEventType,
+            MessagingTopology.AlertRaisedRoutingKey,
+            JsonSerializer.Serialize(@event, SerializerOptions),
+            @event.OccurredAt));
 }

@@ -59,6 +59,13 @@ public static class DependencyInjection
 
         services.AddSingleton<RabbitMqConnectionProvider>();
         services.AddHostedService<SensorReadingConsumer>();
+
+        services.AddOptions<OutboxOptions>()
+            .BindConfiguration(OutboxOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddHostedService<OutboxPublisher>();
         services.AddHealthChecks().AddCheck<RabbitMqHealthCheck>("rabbitmq");
 
         return services;
@@ -89,7 +96,7 @@ public static class DependencyInjection
         services.AddScoped<IThresholdApplicationService, ThresholdApplicationService>();
         services.AddScoped<IReadingIngestionService, ReadingIngestionService>();
         services.AddScoped<ITelemetryQueryService, TelemetryQueryService>();
-        services.AddScoped<IAlertEventPublisher, LoggingAlertEventPublisher>();
+        services.AddScoped<IAlertEventPublisher, OutboxAlertEventPublisher>();
 
         return services;
     }
