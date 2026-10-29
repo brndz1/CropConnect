@@ -149,6 +149,9 @@ message ProductInfo {
   int32 version = 12;
   ProductType type = 13;
   optional google.protobuf.Timestamp available_until = 14;
+  // RF08: what a basket holds. Always shown for pre-defined baskets; for surprise baskets only to the
+  // farm's manager and administrators, since the customer discovers it at pickup.
+  optional string contents = 15;
 }
 
 message CreateProductRequest {
@@ -160,6 +163,7 @@ message CreateProductRequest {
   int32 stock_quantity = 6;
   ProductType type = 7;
   optional google.protobuf.Timestamp available_until = 8;
+  optional string contents = 9;
 }
 
 message GetProductRequest {
@@ -192,6 +196,7 @@ message UpdateProductRequest {
   optional bool is_available = 6;
   optional int32 expected_version = 7;
   optional google.protobuf.Timestamp available_until = 8;
+  optional string contents = 9;
 }
 
 message AdjustStockRequest {

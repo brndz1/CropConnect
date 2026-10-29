@@ -115,7 +115,7 @@ public static class ProtoMappings
 
     #region Products
 
-    public static ProductInfo ToProto(this Product product)
+    public static ProductInfo ToProto(this Product product, Caller caller)
     {
         var info = new ProductInfo
         {
@@ -143,6 +143,11 @@ public static class ProtoMappings
             info.AvailableUntil = availableUntil.ToTimestamp();
         }
 
+        if (product.Contents is { } contents && caller.CanSeeContents(product))
+        {
+            info.Contents = contents;
+        }
+
         return info;
     }
 
@@ -161,7 +166,7 @@ public static class ProtoMappings
         _ => Models.ProductType.Product
     };
 
-    public static ListProductsResponse ToProto(this PagedResult<Product> page)
+    public static ListProductsResponse ToProto(this PagedResult<Product> page, Caller caller)
     {
         var response = new ListProductsResponse
         {
@@ -170,7 +175,7 @@ public static class ProtoMappings
             PageSize = page.PageSize
         };
 
-        response.Products.AddRange(page.Items.Select(product => product.ToProto()));
+        response.Products.AddRange(page.Items.Select(product => product.ToProto(caller)));
         return response;
     }
 

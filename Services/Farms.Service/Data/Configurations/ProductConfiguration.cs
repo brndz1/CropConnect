@@ -20,6 +20,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
 
         builder.Property(p => p.Name).HasMaxLength(FieldLimits.NameMaxLength).IsRequired();
         builder.Property(p => p.Description).HasMaxLength(FieldLimits.DescriptionMaxLength).IsRequired();
+        builder.Property(p => p.Contents).HasMaxLength(FieldLimits.DescriptionMaxLength);
         builder.Property(p => p.Unit).HasMaxLength(FieldLimits.UnitMaxLength).IsRequired();
         builder.Property(p => p.Price).HasPrecision(FieldLimits.MoneyPrecision, FieldLimits.MoneyScale);
 

@@ -27,9 +27,14 @@ public class Product : VersionedEntity
 
     public DateTime? AvailableUntil { get; private set; }
 
+    // RF08: what a basket holds. A surprise basket keeps it from customers until pickup.
+    public string? Contents { get; private set; }
+
     public override string EntityName => "product";
 
     public bool IsBasket => Type is ProductType.PreDefinedBasket or ProductType.SurpriseBasket;
+
+    public bool HidesContents => Type == ProductType.SurpriseBasket;
 
     public bool IsExpired(DateTime now) => IsBasket && AvailableUntil.HasValue && AvailableUntil.Value <= now;
 
@@ -48,7 +53,8 @@ public class Product : VersionedEntity
         int stockQuantity,
         ProductType type,
         DateTime? availableUntil,
-        DateTime now)
+        DateTime now,
+        string? contents = null)
     {
         if (farm.IsDeleted || !farm.IsActive)
         {
@@ -80,6 +86,11 @@ public class Product : VersionedEntity
             {
                 throw new InvalidInputException("Available until date can only be specified for seasonal baskets.");
             }
+
+            if (!string.IsNullOrWhiteSpace(contents))
+            {
+                throw new InvalidInputException("Contents can only be specified for seasonal baskets.");
+            }
         }
 
         var product = new Product
@@ -93,6 +104,7 @@ public class Product : VersionedEntity
             StockQuantity = Guard.NonNegative(stockQuantity, "Stock quantity"),
             Type = type,
             AvailableUntil = availableUntil.HasValue ? DateTime.SpecifyKind(availableUntil.Value, DateTimeKind.Utc) : null,
+            Contents = Guard.Optional(contents, "Contents", FieldLimits.DescriptionMaxLength) is { Length: > 0 } text ? text : null,
             IsAvailable = true
         };
 
@@ -111,7 +123,8 @@ public class Product : VersionedEntity
         decimal? price,
         bool? isAvailable,
         DateTime? availableUntil,
-        DateTime now)
+        DateTime now,
+        string? contents = null)
     {
         var newName = name is null ? Name : Guard.Required(name, "Name", FieldLimits.NameMaxLength);
         var newDescription = description is null ? Description : Guard.Optional(description, "Description", FieldLimits.DescriptionMaxLength);
@@ -131,6 +144,11 @@ public class Product : VersionedEntity
             }
         }
 
+        if (contents is not null && !IsBasket)
+        {
+            throw new BusinessRuleException("Contents can only be specified for seasonal baskets.");
+        }
+
         Touch(now);
         Name = newName;
         Description = newDescription;
@@ -141,6 +159,12 @@ public class Product : VersionedEntity
         if (availableUntil.HasValue)
         {
             AvailableUntil = DateTime.SpecifyKind(availableUntil.Value, DateTimeKind.Utc);
+        }
+
+        // An empty value clears the contents.
+        if (contents is not null)
+        {
+            Contents = Guard.Optional(contents, "Contents", FieldLimits.DescriptionMaxLength) is { Length: > 0 } text ? text : null;
         }
     }
 

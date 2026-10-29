@@ -24,6 +24,9 @@ public sealed record Caller(Guid? UserId, Role? UserRole)
 
     public bool CanManage(Farm farm) => IsAdmin || (IsManager && Owns(farm));
 
+    // RF08: a surprise basket's contents stay hidden from customers until pickup.
+    public bool CanSeeContents(Product product) => !product.HidesContents || CanManage(product.Farm);
+
     public void EnsureCanManage(Farm farm)
     {
         if (!IsAuthenticated)
