@@ -1,0 +1,24 @@
+@Gateway = http://localhost:5000
+
+### Log in as the development administrator; paste the token below
+POST {{Gateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@cropconnect.test",
+  "password": "DevAdmin-ChangeMe-123"
+}
+
+###
+@Token = paste-the-token-here
+
+### Public catalog (RF09)
+GET {{Gateway}}/api/products?onlyInStock=true
+
+### Alert thresholds (RF04)
+GET {{Gateway}}/api/sensor-thresholds
+Authorization: Bearer {{Token}}
+
+### Your notifications
+GET {{Gateway}}/api/notifications
+Authorization: Bearer {{Token}}

@@ -1,0 +1,9 @@
+# Used by BuildKit for CropConnect.ApiGateway/Dockerfile (context: repository root).
+# Later rules win, so the build outputs are excluded after the project folder is included.
+*
+!CropConnect.ServiceDefaults/
+!CropConnect.ApiGateway/
+!Services/*/Protos/*.proto
+**/bin/
+**/obj/
+**/*.user

@@ -192,6 +192,31 @@ services:
       mailpit:
         condition: service_started
 
+  # The only REST entry point for clients; it translates each call to gRPC on the services above.
+  api-gateway:
+    <<: *service
+    build:
+      context: .
+      dockerfile: CropConnect.ApiGateway/Dockerfile
+    image: cropconnect/api-gateway
+    ports:
+      - "${GATEWAY_PORT:-5000}:8080"
+    environment:
+      <<: *jwt
+      Downstream__Auth: http://auth-service:8080
+      Downstream__Users: http://users-service:8080
+      Downstream__Farms: http://farms-service:8080
+      Downstream__Orders: http://orders-service:8080
+      Downstream__Sensors: http://sensors-service:8080
+      Downstream__Notifications: http://notifications-service:8080
+    depends_on:
+      - auth-service
+      - users-service
+      - farms-service
+      - orders-service
+      - sensors-service
+      - notifications-service
+
   # Catches every email locally; open http://localhost:8025 to read them.
   mailpit:
     image: axllent/mailpit:v1.27

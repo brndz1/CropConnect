@@ -9,6 +9,17 @@ CropConnect - Agricultural Management &amp; Marketplace Platform
 docker compose up -d --build
 ```
 
+Clients use the REST API of the gateway, which translates each call to gRPC on the owning service:
+
+| Entry point | Address |
+|---|---|
+| API Gateway (REST) | http://localhost:5000/api |
+| API reference (Scalar) | http://localhost:5000/scalar |
+| OpenAPI document | http://localhost:5000/openapi/v1.json |
+
+Log in with `POST /api/auth/login` and send the token as `Authorization: Bearer <token>`. The services are
+also published on their own ports for development:
+
 | Service | gRPC endpoint (h2c) |
 |---|---|
 | Auth | `localhost:5298` |
