@@ -75,7 +75,8 @@ public sealed class NotificationIngestionService : INotificationIngestionService
             draft.Message,
             draft.RelatedEntityId,
             draft.FarmId,
-            _timeProvider.GetUtcNow().UtcDateTime));
+            _timeProvider.GetUtcNow().UtcDateTime,
+            MessagingTelemetry.CurrentTraceParent()));
 
         try
         {

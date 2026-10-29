@@ -16,6 +16,7 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
         builder.Property(n => n.Message).HasMaxLength(FieldLimits.MessageMaxLength).IsRequired();
         builder.Property(n => n.EmailStatus).HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.Property(n => n.EmailLastError).HasMaxLength(FieldLimits.EmailErrorMaxLength);
+        builder.Property(n => n.TraceParent).HasMaxLength(FieldLimits.TraceParentMaxLength);
 
         // A redelivered event must not notify the same person twice.
         builder.HasIndex(n => new { n.SourceEventId, n.RecipientId }).IsUnique();

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Notifications.Service.Application.Clients;
 using Notifications.Service.Data;
+using Notifications.Service.Messaging;
 using Notifications.Service.Models;
 
 namespace Notifications.Service.Application.Email;
@@ -72,6 +73,8 @@ public sealed class EmailDispatchService : IEmailDispatchService
 
     private async Task<bool> TrySendAsync(Notification notification, CancellationToken cancellationToken)
     {
+        using var activity = MessagingTelemetry.StartEmail(notification.TraceParent, notification.Id);
+
         try
         {
             var contact = await _users.GetContactAsync(notification.RecipientId, cancellationToken);
