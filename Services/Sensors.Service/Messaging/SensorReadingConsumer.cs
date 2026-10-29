@@ -76,6 +76,8 @@ public sealed class SensorReadingConsumer : BackgroundService
 
     private async Task HandleAsync(IChannel channel, BasicDeliverEventArgs delivery, CancellationToken stoppingToken)
     {
+        using var activity = MessagingTelemetry.StartProcess(delivery.BasicProperties, delivery.RoutingKey);
+
         try
         {
             var command = SensorReadingMessage.Parse(delivery.Body.Span).ToCommand();
