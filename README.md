@@ -1,4 +1,7 @@
 # CropConnect
+
+[![CI](https://github.com/brndz1/CropConnect/actions/workflows/ci.yml/badge.svg)](https://github.com/brndz1/CropConnect/actions/workflows/ci.yml)
+
 CropConnect - Agricultural Management &amp; Marketplace Platform
 
 ## Running with .NET Aspire
@@ -79,6 +82,9 @@ run them:
 docker compose up -d --build --wait
 dotnet test tests/CropConnect.EndToEndTests --filter "Category!=Resilience"
 ```
+
+GitHub Actions (`.github/workflows/ci.yml`) builds the solution and runs both suites against Docker Compose
+on every pull request and on `main`.
 
 The resilience tests stop and restart containers to check that orders and emails survive an outage of
 Notifications or of the mail server, so they run on their own:
