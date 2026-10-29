@@ -1,12 +1,12 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var apiService = builder.AddProject<Projects.CropConnect_ApiService>("apiservice")
+var apiGateway = builder.AddProject<Projects.CropConnect_ApiGateway>("apigateway")
     .WithHttpHealthCheck("/health");
 
 builder.AddProject<Projects.CropConnect_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithHttpHealthCheck("/health")
-    .WithReference(apiService)
-    .WaitFor(apiService);
+    .WithReference(apiGateway)
+    .WaitFor(apiGateway);
 
 builder.Build().Run();
