@@ -126,7 +126,8 @@ public sealed class ProductApplicationService : IProductApplicationService
             command.StockQuantity,
             command.Type,
             command.AvailableUntil,
-            Now);
+            Now,
+            command.Contents);
 
         _dbContext.Products.Add(product);
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -149,7 +150,8 @@ public sealed class ProductApplicationService : IProductApplicationService
             command.Price,
             command.IsAvailable,
             command.AvailableUntil,
-            Now);
+            Now,
+            command.Contents);
 
         await _dbContext.SaveChangesOrConflictAsync(product, cancellationToken);
 

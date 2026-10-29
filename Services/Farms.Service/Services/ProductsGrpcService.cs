@@ -27,7 +27,7 @@ public sealed class ProductsGrpcService : ProductsService.ProductsServiceBase
     {
         var productId = RequestParsing.ParseId(request.Id, "Product ID");
         var product = await _products.GetAsync(context.GetCaller(), productId, context.CancellationToken);
-        return product.ToProto();
+        return product.ToProto(context.GetCaller());
     }
 
     [AllowAnonymous]
@@ -42,7 +42,7 @@ public sealed class ProductsGrpcService : ProductsService.ProductsServiceBase
             request.HasType ? request.Type.ToDomain() : null);
 
         var page = await _products.ListAsync(context.GetCaller(), query, context.CancellationToken);
-        return page.ToProto();
+        return page.ToProto(context.GetCaller());
     }
 
     #endregion
@@ -59,10 +59,11 @@ public sealed class ProductsGrpcService : ProductsService.ProductsServiceBase
             RequestParsing.RequiredDecimal(request.Price, "Price"),
             request.StockQuantity,
             request.Type.ToDomain(),
-            RequestParsing.OptionalTimestamp(request.AvailableUntil));
+            RequestParsing.OptionalTimestamp(request.AvailableUntil),
+            RequestParsing.OptionalText(request.HasContents, request.Contents));
 
         var product = await _products.CreateAsync(context.GetCaller(), command, context.CancellationToken);
-        return product.ToProto();
+        return product.ToProto(context.GetCaller());
     }
 
     public override async Task<ProductInfo> UpdateProduct(UpdateProductRequest request, ServerCallContext context)
@@ -75,17 +76,18 @@ public sealed class ProductsGrpcService : ProductsService.ProductsServiceBase
             RequestParsing.OptionalDecimal(request.Price, "Price"),
             RequestParsing.OptionalFlag(request.HasIsAvailable, request.IsAvailable),
             RequestParsing.OptionalNumber(request.HasExpectedVersion, request.ExpectedVersion),
-            RequestParsing.OptionalTimestamp(request.AvailableUntil));
+            RequestParsing.OptionalTimestamp(request.AvailableUntil),
+            RequestParsing.OptionalText(request.HasContents, request.Contents));
 
         var product = await _products.UpdateAsync(context.GetCaller(), command, context.CancellationToken);
-        return product.ToProto();
+        return product.ToProto(context.GetCaller());
     }
 
     public override async Task<ProductInfo> AdjustStock(AdjustStockRequest request, ServerCallContext context)
     {
         var productId = RequestParsing.ParseId(request.Id, "Product ID");
         var product = await _products.AdjustStockAsync(context.GetCaller(), productId, request.Delta, context.CancellationToken);
-        return product.ToProto();
+        return product.ToProto(context.GetCaller());
     }
 
     public override async Task<Empty> DeleteProduct(DeleteProductRequest request, ServerCallContext context)

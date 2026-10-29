@@ -29,6 +29,7 @@ public static class ProductEndpoints
         bool IsAvailable,
         ProductType? Type,
         DateTime? AvailableUntil,
+        string? Contents,
         DateTime? CreatedAt,
         DateTime? UpdatedAt,
         int Version);
@@ -41,7 +42,8 @@ public static class ProductEndpoints
         decimal Price,
         int StockQuantity,
         ProductType Type,
-        DateTime? AvailableUntil);
+        DateTime? AvailableUntil,
+        string? Contents = null);
 
     public sealed record UpdateProductBody(
         string? Name,
@@ -50,7 +52,8 @@ public static class ProductEndpoints
         decimal? Price,
         bool? IsAvailable,
         DateTime? AvailableUntil,
-        int? ExpectedVersion);
+        int? ExpectedVersion,
+        string? Contents = null);
 
     public sealed record AdjustStockBody(int Delta);
 
@@ -100,6 +103,7 @@ public static class ProductEndpoints
                     Type = ToProto(body.Type)
                 };
                 if (body.AvailableUntil is not null) request.AvailableUntil = body.AvailableUntil.Value.ToTimestamp();
+                if (body.Contents is not null) request.Contents = body.Contents;
 
                 var created = await client.CreateProductAsync(request, cancellationToken: ct);
                 return TypedResults.Created($"/api/products/{created.Id}", ToResponse(created));
@@ -116,6 +120,7 @@ public static class ProductEndpoints
                 if (body.IsAvailable is not null) request.IsAvailable = body.IsAvailable.Value;
                 if (body.AvailableUntil is not null) request.AvailableUntil = body.AvailableUntil.Value.ToTimestamp();
                 if (body.ExpectedVersion is not null) request.ExpectedVersion = body.ExpectedVersion.Value;
+                if (body.Contents is not null) request.Contents = body.Contents;
                 return TypedResults.Ok(ToResponse(await client.UpdateProductAsync(request, cancellationToken: ct)));
             })
             .WithSummary("Edit a product or basket (manager, RF06, RF08)");
@@ -148,6 +153,7 @@ public static class ProductEndpoints
         product.IsAvailable,
         FromProto(product.Type),
         product.AvailableUntil.AsDateTime(),
+        product.HasContents ? product.Contents : null,
         product.CreatedAt.AsDateTime(),
         product.UpdatedAt.AsDateTime(),
         product.Version);

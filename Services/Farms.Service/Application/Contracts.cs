@@ -28,7 +28,8 @@ public sealed record CreateProductCommand(
     decimal Price,
     int StockQuantity,
     ProductType Type = ProductType.Product,
-    DateTime? AvailableUntil = null);
+    DateTime? AvailableUntil = null,
+    string? Contents = null);
 
 public sealed record UpdateProductCommand(
     Guid ProductId,
@@ -38,7 +39,8 @@ public sealed record UpdateProductCommand(
     decimal? Price,
     bool? IsAvailable,
     int? ExpectedVersion,
-    DateTime? AvailableUntil = null);
+    DateTime? AvailableUntil = null,
+    string? Contents = null);
 
 public sealed record ProductQuery(
     PageRequest Page,
