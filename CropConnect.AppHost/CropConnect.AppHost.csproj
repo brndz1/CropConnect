@@ -10,8 +10,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.5.4" />
+    <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.5.4" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CropConnect.ApiGateway\CropConnect.ApiGateway.csproj" />
     <ProjectReference Include="..\CropConnect.Web\CropConnect.Web.csproj" />
+    <ProjectReference Include="..\Services\Auth.Service\Auth.Service.csproj" />
+    <ProjectReference Include="..\Services\Users.Service\Users.Service.csproj" />
+    <ProjectReference Include="..\Services\Farms.Service\Farms.Service.csproj" />
+    <ProjectReference Include="..\Services\Orders.Service\Orders.Service.csproj" />
+    <ProjectReference Include="..\Services\Sensors.Service\Sensors.Service.csproj" />
+    <ProjectReference Include="..\Services\Notifications.Service\Notifications.Service.csproj" />
   </ItemGroup>
 
 </Project>
