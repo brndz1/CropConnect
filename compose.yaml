@@ -64,6 +64,7 @@ services:
       <<: [*jwt, *database]
       ConnectionStrings__AuthDb: Host=postgres;Database=auth_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       JwtSettings__ExpirationMinutes: "60"
+      InternalApi__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
       BootstrapAdmin__Username: ${ADMIN_USERNAME:-admin}
       BootstrapAdmin__Email: ${ADMIN_EMAIL:-admin@cropconnect.test}
       BootstrapAdmin__Password: ${ADMIN_PASSWORD:-DevAdmin-ChangeMe-123}
@@ -116,8 +117,14 @@ services:
       InternalApi__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
       FarmsService__Url: http://farms-service:8080
       FarmsService__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: "5672"
+      RabbitMq__UserName: ${RABBITMQ_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:-guest}
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
       farms-service:
         condition: service_started
@@ -147,6 +154,51 @@ services:
         condition: service_healthy
       farms-service:
         condition: service_started
+
+  notifications-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Services/Notifications.Service/Dockerfile
+    image: cropconnect/notifications-service
+    ports:
+      - "5005:8080"
+    environment:
+      <<: [*jwt, *database]
+      ConnectionStrings__NotificationsDb: Host=postgres;Database=notifications_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: "5672"
+      RabbitMq__UserName: ${RABBITMQ_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:-guest}
+      FarmsService__Url: http://farms-service:8080
+      FarmsService__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
+      AuthService__Url: http://auth-service:8080
+      AuthService__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
+      # Mailpit by default; set EMAIL_PROVIDER=Mailtrap and MAILTRAP_API_TOKEN to send through Mailtrap.
+      Email__Provider: ${EMAIL_PROVIDER:-Mailpit}
+      Email__FromAddress: ${EMAIL_FROM_ADDRESS:-notifications@cropconnect.test}
+      Email__Mailpit__BaseUrl: http://mailpit:8025/
+      Email__Mailtrap__ApiToken: ${MAILTRAP_API_TOKEN:-}
+      Email__Mailtrap__SandboxInboxId: ${MAILTRAP_SANDBOX_INBOX_ID:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      farms-service:
+        condition: service_started
+      mailpit:
+        condition: service_started
+
+  # Catches every email locally; open http://localhost:8025 to read them.
+  mailpit:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    networks: [cropconnect]
+    ports:
+      - "${MAILPIT_UI_PORT:-8025}:8025"
 
 networks:
   cropconnect:

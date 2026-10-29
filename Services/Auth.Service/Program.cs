@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Auth.Service.Data;
 using Auth.Service.Models;
+using Auth.Service.Security;
+using Microsoft.AspNetCore.Authentication;
 using Auth.Service.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,7 +19,16 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
 builder.Services.AddScoped<JwtTokenGenerator>();
 builder.Services.AddSingleton<JwtTokenValidator>();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
+builder.Services.AddOptions<InternalApiOptions>()
+    .BindConfiguration(InternalApiOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer()
+    .AddScheme<AuthenticationSchemeOptions, InternalApiKeyAuthenticationHandler>(
+        InternalApiKeyAuthenticationHandler.SchemeName,
+        _ => { });
 builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
     .Configure<JwtTokenValidator>((bearer, validator) =>
     {
@@ -27,7 +38,10 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy(UserAccountsGrpcService.AdminPolicy, policy => policy
-        .RequireClaim(JwtTokenGenerator.RoleClaim, nameof(Role.Admin)));
+        .RequireClaim(JwtTokenGenerator.RoleClaim, nameof(Role.Admin)))
+    .AddPolicy(AuthorizationPolicies.InternalService, policy => policy
+        .AddAuthenticationSchemes(InternalApiKeyAuthenticationHandler.SchemeName)
+        .RequireAuthenticatedUser());
 
 var app = builder.Build();
 
@@ -45,6 +59,7 @@ app.UseAuthorization();
 
 app.MapGrpcService<AuthGrpcService>();
 app.MapGrpcService<UserAccountsGrpcService>();
+app.MapGrpcService<UserDirectoryGrpcService>();
 app.MapDefaultEndpoints();
 app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
 

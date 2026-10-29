@@ -15,6 +15,8 @@ public class OrdersDbContext : DbContext
 
     public DbSet<Review> Reviews => Set<Review>();
 
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

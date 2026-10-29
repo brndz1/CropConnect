@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+option csharp_namespace = "Notifications.Service.Protos";
+
+package notifications.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// The signed-in user's notifications (RF19, RF20, RF21). Every call works on the caller's own inbox.
+service NotificationsService {
+  rpc ListMyNotifications (ListMyNotificationsRequest) returns (ListNotificationsResponse);
+  rpc MarkNotificationRead (MarkNotificationReadRequest) returns (NotificationInfo);
+  rpc MarkAllNotificationsRead (MarkAllNotificationsReadRequest) returns (MarkAllNotificationsReadResponse);
+}
+
+enum NotificationType {
+  NOTIFICATION_TYPE_UNSPECIFIED = 0;
+  NOTIFICATION_TYPE_ORDER_CREATED = 1;
+  NOTIFICATION_TYPE_ORDER_STATUS_CHANGED = 2;
+  NOTIFICATION_TYPE_ORDER_CANCELLED = 3;
+  NOTIFICATION_TYPE_SENSOR_ALERT = 4;
+}
+
+enum EmailStatus {
+  EMAIL_STATUS_UNSPECIFIED = 0;
+  EMAIL_STATUS_PENDING = 1;
+  EMAIL_STATUS_SENT = 2;
+  EMAIL_STATUS_FAILED = 3;
+  EMAIL_STATUS_SKIPPED = 4;
+}
+
+message NotificationInfo {
+  string id = 1;
+  NotificationType type = 2;
+  string title = 3;
+  string message = 4;
+  string related_entity_id = 5;
+  string farm_id = 6;
+  google.protobuf.Timestamp created_at = 7;
+  optional google.protobuf.Timestamp read_at = 8;
+  EmailStatus email_status = 9;
+}
+
+message ListMyNotificationsRequest {
+  bool only_unread = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message ListNotificationsResponse {
+  repeated NotificationInfo notifications = 1;
+  int32 total_count = 2;
+  int32 unread_count = 3;
+  int32 page = 4;
+  int32 page_size = 5;
+}
+
+message MarkNotificationReadRequest {
+  string id = 1;
+}
+
+message MarkAllNotificationsReadRequest {
+}
+
+message MarkAllNotificationsReadResponse {
+  int32 marked_count = 1;
+}
