@@ -76,6 +76,8 @@ public sealed class NotificationEventConsumer : BackgroundService
 
     private async Task HandleAsync(IChannel channel, BasicDeliverEventArgs delivery, CancellationToken stoppingToken)
     {
+        using var activity = MessagingTelemetry.StartProcess(delivery.BasicProperties, delivery.RoutingKey);
+
         try
         {
             // Producers set MessageId to their outbox message ID, which makes redeliveries idempotent.

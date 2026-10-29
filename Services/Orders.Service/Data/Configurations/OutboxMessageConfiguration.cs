@@ -14,6 +14,7 @@ public class OutboxMessageConfiguration : IEntityTypeConfiguration<OutboxMessage
         builder.Property(m => m.RoutingKey).HasMaxLength(FieldLimits.RoutingKeyMaxLength).IsRequired();
         builder.Property(m => m.Payload).HasColumnType("jsonb").IsRequired();
         builder.Property(m => m.LastError).HasMaxLength(FieldLimits.OutboxErrorMaxLength);
+        builder.Property(m => m.TraceParent).HasMaxLength(FieldLimits.TraceParentMaxLength);
 
         // The publisher only ever scans the pending messages, oldest first.
         builder.HasIndex(m => m.OccurredAt).HasFilter("\"PublishedAt\" IS NULL");

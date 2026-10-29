@@ -41,6 +41,9 @@ public sealed class Notification
 
     public string? EmailLastError { get; private set; }
 
+    // W3C trace context of the event handling that created it, resumed when the email is sent.
+    public string? TraceParent { get; private set; }
+
     #endregion
 
     #region Factory
@@ -53,7 +56,8 @@ public sealed class Notification
         string message,
         Guid relatedEntityId,
         Guid farmId,
-        DateTime now) => new()
+        DateTime now,
+        string? traceParent = null) => new()
     {
         Id = Guid.NewGuid(),
         SourceEventId = Guard.NotEmpty(sourceEventId, "Source event ID"),
@@ -65,7 +69,8 @@ public sealed class Notification
         FarmId = Guard.NotEmpty(farmId, "Farm ID"),
         CreatedAt = now,
         EmailStatus = EmailStatus.Pending,
-        EmailNextAttemptAt = now
+        EmailNextAttemptAt = now,
+        TraceParent = traceParent is { Length: <= FieldLimits.TraceParentMaxLength } ? traceParent : null
     };
 
     #endregion

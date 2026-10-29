@@ -33,5 +33,6 @@ public sealed class OutboxAlertEventPublisher : IAlertEventPublisher
             AlertRaisedEventType,
             MessagingTopology.AlertRaisedRoutingKey,
             JsonSerializer.Serialize(@event, SerializerOptions),
-            @event.OccurredAt));
+            @event.OccurredAt,
+            MessagingTelemetry.CurrentTraceParent()));
 }
