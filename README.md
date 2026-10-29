@@ -1,6 +1,24 @@
 # CropConnect
 CropConnect - Agricultural Management &amp; Marketplace Platform
 
+## Running with .NET Aspire
+
+For development, the Aspire AppHost starts every service as a project, with PostgreSQL (one database per
+service), RabbitMQ and Mailpit in containers, and opens the Aspire dashboard with their logs, distributed
+traces and metrics:
+
+```bash
+dotnet run --project CropConnect.AppHost
+```
+
+- The dashboard URL (with its login token) is printed on startup. The resource list links to the gateway,
+  the RabbitMQ management UI and the Mailpit inbox.
+- Traces follow a request from the gateway through the gRPC calls between services, their PostgreSQL
+  commands and the RabbitMQ messages they publish and consume.
+- The services use their `appsettings.Development.json` secrets; Aspire only supplies connection strings,
+  the broker and the addresses of the other services.
+- Stop Docker Compose first (`docker compose stop`): both publish the services on the same ports.
+
 ## Running with Docker
 
 `compose.yaml` starts every service with PostgreSQL and RabbitMQ:
