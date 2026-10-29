@@ -7,11 +7,25 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Protobuf Include="..\Services\Auth.Service\Protos\auth.proto" GrpcServices="Client" Link="Protos\auth.proto" />
+    <Protobuf Include="..\Services\Users.Service\Protos\users.proto" GrpcServices="Client" Link="Protos\users.proto" />
+    <Protobuf Include="..\Services\Farms.Service\Protos\farms.proto" GrpcServices="Client" Link="Protos\farms.proto" />
+    <Protobuf Include="..\Services\Orders.Service\Protos\orders.proto" GrpcServices="Client" Link="Protos\orders.proto" />
+    <Protobuf Include="..\Services\Sensors.Service\Protos\sensors.proto" GrpcServices="Client" Link="Protos\sensors.proto" />
+    <Protobuf Include="..\Services\Notifications.Service\Protos\notifications.proto" GrpcServices="Client" Link="Protos\notifications.proto" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CropConnect.ServiceDefaults\CropConnect.ServiceDefaults.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.27.0" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.64.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.64.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.17.14" />
   </ItemGroup>
 
 </Project>
