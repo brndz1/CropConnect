@@ -57,11 +57,16 @@ public static class Extensions
             {
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
+                    .AddRuntimeInstrumentation()
+                    .AddMeter("Npgsql");
             })
             .WithTracing(tracing =>
             {
                 tracing.AddSource(builder.Environment.ApplicationName)
+                    // Database commands (Npgsql) and RabbitMQ publish/consume, so a trace follows a request
+                    // through PostgreSQL and the message broker, not only across HTTP and gRPC calls.
+                    .AddSource("Npgsql")
+                    .AddSource("RabbitMQ.Client.Publisher", "RabbitMQ.Client.Subscriber")
                     .AddAspNetCoreInstrumentation(tracing =>
                         // Exclude health check requests from tracing
                         tracing.Filter = context =>
