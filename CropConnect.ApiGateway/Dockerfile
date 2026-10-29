@@ -23,10 +23,18 @@ RUN dotnet publish CropConnect.ApiGateway/CropConnect.ApiGateway.csproj -c Relea
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
+# curl runs the health check.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # REST over plain HTTP; put TLS termination (a reverse proxy or the cloud load balancer) in front of it.
 ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
 
 COPY --from=build /app/publish .
 USER $APP_UID
+
+HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=3 \
+    CMD curl -fsS http://localhost:8080/health || exit 1
 ENTRYPOINT ["dotnet", "CropConnect.ApiGateway.dll"]

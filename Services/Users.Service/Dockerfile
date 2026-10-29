@@ -16,9 +16,10 @@ RUN dotnet publish Services/Users.Service/Users.Service.csproj -c Release -o /ap
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-# Npgsql probes for Kerberos (GSSAPI) on every connection and logs an error when the library is missing.
+# Npgsql probes for Kerberos (GSSAPI) on every connection and logs an error when the library is missing;
+# curl runs the health check.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 curl \
     && rm -rf /var/lib/apt/lists/*
 
 # gRPC over plain HTTP/2 (h2c), as configured in appsettings.json; TLS ends at the gateway.
@@ -27,4 +28,8 @@ EXPOSE 8080
 
 COPY --from=build /app/publish .
 USER $APP_UID
+
+# Kestrel only speaks HTTP/2 here, so curl must use it from the first byte.
+HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=3 \
+    CMD curl -fsS --http2-prior-knowledge http://localhost:8080/health || exit 1
 ENTRYPOINT ["dotnet", "Users.Service.dll"]

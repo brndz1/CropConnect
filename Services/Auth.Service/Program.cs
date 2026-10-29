@@ -15,6 +15,7 @@ builder.Services.AddGrpc(options => options.Interceptors.Add<ExceptionMappingInt
 
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("AuthDb")));
+builder.Services.AddHealthChecks().AddCheck<AuthDbHealthCheck>("auth-db");
 
 builder.Services.AddScoped<JwtTokenGenerator>();
 builder.Services.AddSingleton<JwtTokenValidator>();

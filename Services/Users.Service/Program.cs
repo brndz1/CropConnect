@@ -14,6 +14,7 @@ builder.Services.AddGrpc(options => options.Interceptors.Add<ExceptionMappingInt
 
 builder.Services.AddDbContext<UsersDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("UsersDb")));
+builder.Services.AddHealthChecks().AddCheck<UsersDbHealthCheck>("users-db");
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var jwtSecret = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret not configured.");
