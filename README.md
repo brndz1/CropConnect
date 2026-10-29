@@ -68,3 +68,24 @@ Each service can also be built on its own from the repository root, for example:
 ```bash
 docker build -f Services/Auth.Service/Dockerfile -t cropconnect/auth-service .
 ```
+
+## End-to-end tests
+
+`tests/CropConnect.EndToEndTests` tests the running platform from the outside, the way clients use it: through
+the gateway's REST API, RabbitMQ (as the sensors do) and Mailpit (the notification emails). Start the stack and
+run them:
+
+```bash
+docker compose up -d --build --wait
+dotnet test tests/CropConnect.EndToEndTests --filter "Category!=Resilience"
+```
+
+The resilience tests stop and restart containers to check that orders and emails survive an outage of
+Notifications or of the mail server, so they run on their own:
+
+```bash
+dotnet test tests/CropConnect.EndToEndTests --filter "Category=Resilience"
+```
+
+To test another environment (e.g. the Aspire AppHost), set `CROPCONNECT_GATEWAY_URL`,
+`CROPCONNECT_RABBITMQ_MANAGEMENT_URL` and `CROPCONNECT_MAILPIT_URL`.
