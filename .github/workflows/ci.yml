@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build the solution
+        run: dotnet build CropConnect.sln -c Release
+
+  end-to-end:
+    name: End-to-end tests
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Start the platform with Docker Compose
+        run: docker compose up -d --build --wait --wait-timeout 300
+
+      - name: Run the functional tests
+        run: dotnet test tests/CropConnect.EndToEndTests -c Release --filter "Category!=Resilience" --logger "console;verbosity=normal"
+
+      # They stop and restart containers, so they run after the other tests, never alongside them.
+      - name: Run the resilience tests
+        run: dotnet test tests/CropConnect.EndToEndTests -c Release --no-build --filter "Category=Resilience" --logger "console;verbosity=normal"
+
+      - name: Show service logs
+        if: failure()
+        run: docker compose logs --no-color --tail 200
+
+      - name: Stop the platform
+        if: always()
+        run: docker compose down -v
