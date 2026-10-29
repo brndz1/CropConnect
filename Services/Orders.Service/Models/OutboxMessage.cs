@@ -20,6 +20,9 @@ public sealed class OutboxMessage
 
     public DateTime OccurredAt { get; private set; }
 
+    // W3C trace context of the request that raised the event, resumed when the message is published.
+    public string? TraceParent { get; private set; }
+
     public DateTime? PublishedAt { get; private set; }
 
     public int Attempts { get; private set; }
@@ -30,13 +33,14 @@ public sealed class OutboxMessage
 
     #region Factory
 
-    public static OutboxMessage Create(string eventType, string routingKey, string payload, DateTime now) => new()
+    public static OutboxMessage Create(string eventType, string routingKey, string payload, DateTime now, string? traceParent = null) => new()
     {
         Id = Guid.NewGuid(),
         EventType = Guard.Required(eventType, "Event type", FieldLimits.EventTypeMaxLength),
         RoutingKey = Guard.Required(routingKey, "Routing key", FieldLimits.RoutingKeyMaxLength),
         Payload = Guard.Required(payload, "Payload", int.MaxValue),
-        OccurredAt = now
+        OccurredAt = now,
+        TraceParent = traceParent is { Length: <= FieldLimits.TraceParentMaxLength } ? traceParent : null
     };
 
     #endregion

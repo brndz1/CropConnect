@@ -12,4 +12,5 @@ public static class FieldLimits
     public const int EventTypeMaxLength = 100;
     public const int RoutingKeyMaxLength = 255;
     public const int OutboxErrorMaxLength = 1000;
+    public const int TraceParentMaxLength = 55;
 }

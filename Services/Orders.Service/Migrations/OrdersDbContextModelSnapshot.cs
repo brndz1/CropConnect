@@ -151,6 +151,10 @@ namespace Orders.Service.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<string>("TraceParent")
+                        .HasMaxLength(55)
+                        .HasColumnType("character varying(55)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("OccurredAt")

@@ -49,5 +49,6 @@ public sealed class OutboxOrderEventPublisher : IOrderEventPublisher
             eventType,
             routingKey,
             JsonSerializer.Serialize(@event, SerializerOptions),
-            occurredAt));
+            occurredAt,
+            MessagingTelemetry.CurrentTraceParent()));
 }

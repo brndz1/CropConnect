@@ -77,6 +77,8 @@ public sealed class OutboxPublisher : BackgroundService
             {
                 try
                 {
+                    using var activity = MessagingTelemetry.StartPublish(message.TraceParent, message.RoutingKey, message.Id);
+
                     var properties = new BasicProperties
                     {
                         MessageId = message.Id.ToString(),
