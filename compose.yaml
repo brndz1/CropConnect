@@ -127,7 +127,7 @@ services:
       rabbitmq:
         condition: service_healthy
       farms-service:
-        condition: service_started
+        condition: service_healthy
 
   sensors-service:
     <<: *service
@@ -153,7 +153,7 @@ services:
       rabbitmq:
         condition: service_healthy
       farms-service:
-        condition: service_started
+        condition: service_healthy
 
   notifications-service:
     <<: *service
@@ -186,9 +186,9 @@ services:
       rabbitmq:
         condition: service_healthy
       auth-service:
-        condition: service_started
+        condition: service_healthy
       farms-service:
-        condition: service_started
+        condition: service_healthy
       mailpit:
         condition: service_started
 
@@ -210,12 +210,18 @@ services:
       Downstream__Sensors: http://sensors-service:8080
       Downstream__Notifications: http://notifications-service:8080
     depends_on:
-      - auth-service
-      - users-service
-      - farms-service
-      - orders-service
-      - sensors-service
-      - notifications-service
+      auth-service:
+        condition: service_healthy
+      users-service:
+        condition: service_healthy
+      farms-service:
+        condition: service_healthy
+      orders-service:
+        condition: service_healthy
+      sensors-service:
+        condition: service_healthy
+      notifications-service:
+        condition: service_healthy
 
   # Catches every email locally; open http://localhost:8025 to read them.
   mailpit:
