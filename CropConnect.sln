@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CropConnect.Web", "CropConn
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "services", "services", "{5854FF58-B8C5-05C6-5BF2-ACE42193F22B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Auth.Service", "services\Auth.Service\Auth.Service.csproj", "{300EFDD4-4D3F-4991-B820-1B64CFE1DAA4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Auth.Service", "Services\Auth.Service\Auth.Service.csproj", "{300EFDD4-4D3F-4991-B820-1B64CFE1DAA4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CropConnect.ApiGateway", "CropConnect.ApiGateway", "{FF7C2B5D-7450-F60B-7296-9427DB17BF3D}"
 EndProject
