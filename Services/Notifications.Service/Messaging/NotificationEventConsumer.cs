@@ -76,7 +76,8 @@ public sealed class NotificationEventConsumer : BackgroundService
 
     private async Task HandleAsync(IChannel channel, BasicDeliverEventArgs delivery, CancellationToken stoppingToken)
     {
-        using var activity = MessagingTelemetry.StartProcess(delivery.BasicProperties, delivery.RoutingKey);
+        var routingKey = DeliveryRetries.RoutingKey(delivery);
+        using var activity = MessagingTelemetry.StartProcess(delivery.BasicProperties, routingKey);
 
         try
         {
@@ -88,22 +89,25 @@ public sealed class NotificationEventConsumer : BackgroundService
 
             await using var scope = _scopeFactory.CreateAsyncScope();
             var ingestion = scope.ServiceProvider.GetRequiredService<INotificationIngestionService>();
-            var created = await ingestion.HandleAsync(delivery.RoutingKey, eventId, delivery.Body, stoppingToken);
+            var created = await ingestion.HandleAsync(routingKey, eventId, delivery.Body, stoppingToken);
 
-            _logger.LogDebug("Event {EventId} ({RoutingKey}) handled; notification created: {Created}", eventId, delivery.RoutingKey, created);
+            _logger.LogDebug("Event {EventId} ({RoutingKey}) handled; notification created: {Created}", eventId, routingKey, created);
             await channel.BasicAckAsync(delivery.DeliveryTag, multiple: false, stoppingToken);
         }
         catch (DomainException exception)
         {
             // Retrying won't fix a malformed or unsupported event: send it to the dead-letter queue.
-            _logger.LogWarning("Event rejected ({RoutingKey}): {Reason}", delivery.RoutingKey, exception.Message);
+            _logger.LogWarning("Event rejected ({RoutingKey}): {Reason}", routingKey, exception.Message);
             await channel.BasicNackAsync(delivery.DeliveryTag, multiple: false, requeue: false, stoppingToken);
         }
         catch (Exception exception) when (!stoppingToken.IsCancellationRequested)
         {
-            _logger.LogError(exception, "Failed to process event ({RoutingKey}); it will be retried", delivery.RoutingKey);
             await Task.Delay(_options.RetryDelay, stoppingToken);
-            await channel.BasicNackAsync(delivery.DeliveryTag, multiple: false, requeue: true, stoppingToken);
+            var retried = await DeliveryRetries.RetryOrDeadLetterAsync(channel, delivery, MessagingTopology.EventsQueue, _options.MaxRetries, stoppingToken);
+            _logger.LogError(
+                exception,
+                retried ? "Failed to process event ({RoutingKey}); it will be retried" : "Failed to process event ({RoutingKey}) too many times; it was dead-lettered",
+                routingKey);
         }
     }
 

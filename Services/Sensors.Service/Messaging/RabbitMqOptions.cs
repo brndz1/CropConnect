@@ -29,5 +29,10 @@ public sealed class RabbitMqOptions
     [Range(typeof(TimeSpan), "00:00:00", "00:05:00")]
     public TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(5);
 
+    // Retries of a message that keeps failing for a non-domain reason before it is dead-lettered
+    // (with the default delay, about five minutes: long enough to ride out a dependency restarting).
+    [Range(0, 10_000)]
+    public int MaxRetries { get; set; } = 60;
+
     public bool EnableConsumer { get; set; } = true;
 }

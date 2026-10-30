@@ -96,9 +96,12 @@ public sealed class SensorReadingConsumer : BackgroundService
         }
         catch (Exception exception) when (!stoppingToken.IsCancellationRequested)
         {
-            _logger.LogError(exception, "Failed to process reading ({RoutingKey}); it will be retried", delivery.RoutingKey);
             await Task.Delay(_options.RetryDelay, stoppingToken);
-            await channel.BasicNackAsync(delivery.DeliveryTag, multiple: false, requeue: true, stoppingToken);
+            var retried = await DeliveryRetries.RetryOrDeadLetterAsync(channel, delivery, MessagingTopology.ReadingsQueue, _options.MaxRetries, stoppingToken);
+            _logger.LogError(
+                exception,
+                retried ? "Failed to process reading ({RoutingKey}); it will be retried" : "Failed to process reading ({RoutingKey}) too many times; it was dead-lettered",
+                delivery.RoutingKey);
         }
     }
 
