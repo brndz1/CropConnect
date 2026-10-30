@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Exceptions;
 using Sensors.Service.Data;
 
 namespace Sensors.Service.Messaging;
@@ -88,10 +89,12 @@ public sealed class OutboxPublisher : BackgroundService
                         Timestamp = new AmqpTimestamp(new DateTimeOffset(message.OccurredAt).ToUnixTimeSeconds())
                     };
 
+                    // Mandatory: if no queue is bound yet (Notification.Service never started), the broker returns
+                    // the message, the publish throws and the event stays in the outbox instead of being dropped.
                     await channel.BasicPublishAsync(
                         MessagingTopology.EventsExchange,
                         message.RoutingKey,
-                        mandatory: false,
+                        mandatory: true,
                         properties,
                         Encoding.UTF8.GetBytes(message.Payload),
                         stoppingToken);
@@ -102,7 +105,9 @@ public sealed class OutboxPublisher : BackgroundService
                 catch (Exception exception) when (!stoppingToken.IsCancellationRequested)
                 {
                     // Keep the order: stop at the first failure and retry the rest on the next tick.
-                    message.MarkFailed(exception.Message);
+                    message.MarkFailed(exception is PublishException { IsReturn: true }
+                        ? $"No queue is bound to '{message.RoutingKey}' yet."
+                        : exception.Message);
                     await dbContext.SaveChangesAsync(stoppingToken);
                     _logger.LogWarning(exception, "Failed to publish outbox message {MessageId}; it will be retried", message.Id);
                     await ResetChannelAsync();
