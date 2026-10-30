@@ -40,8 +40,10 @@ Clients use the REST API of the gateway, which translates each call to gRPC on t
 
 Log in with `POST /api/auth/login` and send the token as `Authorization: Bearer <token>`. A deactivated account
 is refused within 15 seconds (`JwtSettings__ActiveUserCacheDuration` on the gateway), without waiting for its token
-to expire. The services are
-also published on their own ports for development:
+to expire.
+
+Only the gateway is reachable from other machines. For debugging and the tests, the services and the infrastructure
+are also published on their own ports, on `127.0.0.1` only:
 
 | Service | gRPC endpoint (h2c) |
 |---|---|
