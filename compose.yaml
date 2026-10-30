@@ -16,6 +16,11 @@ x-jwt: &jwt
 x-database: &database
   Database__ApplyMigrationsOnStartup: "true"
 
+# Logs, traces and metrics of every service go to the Aspire dashboard (http://localhost:18888).
+x-telemetry: &telemetry
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://aspire-dashboard:18889
+  OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+
 services:
   postgres:
     image: postgres:17-alpine
@@ -61,7 +66,8 @@ services:
     ports:
       - "5298:8080"
     environment:
-      <<: [*jwt, *database]
+      <<: [*jwt, *database, *telemetry]
+      OTEL_SERVICE_NAME: auth-service
       ConnectionStrings__AuthDb: Host=postgres;Database=auth_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       JwtSettings__ExpirationMinutes: "60"
       InternalApi__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
@@ -81,7 +87,8 @@ services:
     ports:
       - "5001:8080"
     environment:
-      <<: [*jwt, *database]
+      <<: [*jwt, *database, *telemetry]
+      OTEL_SERVICE_NAME: users-service
       ConnectionStrings__UsersDb: Host=postgres;Database=users_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
     depends_on:
       postgres:
@@ -96,7 +103,8 @@ services:
     ports:
       - "5002:8080"
     environment:
-      <<: [*jwt, *database]
+      <<: [*jwt, *database, *telemetry]
+      OTEL_SERVICE_NAME: farms-service
       ConnectionStrings__FarmsDb: Host=postgres;Database=farms_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       InternalApi__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
     depends_on:
@@ -112,7 +120,8 @@ services:
     ports:
       - "5003:8080"
     environment:
-      <<: [*jwt, *database]
+      <<: [*jwt, *database, *telemetry]
+      OTEL_SERVICE_NAME: orders-service
       ConnectionStrings__OrdersDb: Host=postgres;Database=orders_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       InternalApi__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
       FarmsService__Url: http://farms-service:8080
@@ -138,7 +147,8 @@ services:
     ports:
       - "5004:8080"
     environment:
-      <<: [*jwt, *database]
+      <<: [*jwt, *database, *telemetry]
+      OTEL_SERVICE_NAME: sensors-service
       ConnectionStrings__SensorsDb: Host=postgres;Database=sensors_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       InternalApi__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
       FarmsService__Url: http://farms-service:8080
@@ -164,7 +174,8 @@ services:
     ports:
       - "5005:8080"
     environment:
-      <<: [*jwt, *database]
+      <<: [*jwt, *database, *telemetry]
+      OTEL_SERVICE_NAME: notifications-service
       ConnectionStrings__NotificationsDb: Host=postgres;Database=notifications_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: "5672"
@@ -202,7 +213,8 @@ services:
     ports:
       - "${GATEWAY_PORT:-5000}:8080"
     environment:
-      <<: *jwt
+      <<: [*jwt, *telemetry]
+      OTEL_SERVICE_NAME: api-gateway
       Downstream__Auth: http://auth-service:8080
       Downstream__Users: http://users-service:8080
       Downstream__Farms: http://farms-service:8080
@@ -230,6 +242,17 @@ services:
     networks: [cropconnect]
     ports:
       - "${MAILPIT_UI_PORT:-8025}:8025"
+
+  # Aspire dashboard on its own: the logs, distributed traces and metrics the services export over OTLP.
+  # It has no login, so it is only published on 127.0.0.1.
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:13.5
+    restart: unless-stopped
+    networks: [cropconnect]
+    environment:
+      ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
+    ports:
+      - "127.0.0.1:${DASHBOARD_PORT:-18888}:18888"
 
   # Simulated farm sensors (RF16), only with --profile simulation so the tests never see random alerts.
   # Every 30 s it sends a reading per active farm and sensor type; open http://localhost:1881 for the flow.
