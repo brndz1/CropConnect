@@ -56,11 +56,14 @@ also published on their own ports for development:
 | RabbitMQ (AMQP) | `localhost:5673` |
 | RabbitMQ management | http://localhost:15673 (`guest` / `guest`) |
 | Mailpit (notification emails) | http://localhost:8025 |
+| Aspire dashboard (logs, traces, metrics) | http://localhost:18888 |
 
 - Each service applies its migrations on startup; Auth also creates the bootstrap administrator
   (`admin@cropconnect.test`).
 - The defaults are for development only. Copy `.env.example` to `.env` to change secrets, credentials
   and ports.
+- Every service exports its logs, distributed traces and metrics over OTLP to the standalone Aspire
+  dashboard, as under Aspire. It has no login, so Compose only publishes it on `127.0.0.1`.
 - Data is kept in the `postgres-data` and `rabbitmq-data` volumes; `docker compose down -v` removes it.
 - Notification emails are caught by Mailpit. To send them through Mailtrap instead, set `EMAIL_PROVIDER=Mailtrap`
   and `MAILTRAP_API_TOKEN` (plus `MAILTRAP_SANDBOX_INBOX_ID` to use a sandbox inbox) in `.env`.
