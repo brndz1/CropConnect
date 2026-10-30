@@ -4,6 +4,8 @@
 
 CropConnect - Agricultural Management &amp; Marketplace Platform
 
+The architecture, data model, RabbitMQ events, gRPC contracts and REST API are described in [docs](docs/README.md).
+
 ## Running with .NET Aspire
 
 For development, the Aspire AppHost starts every service as a project, with PostgreSQL (one database per
