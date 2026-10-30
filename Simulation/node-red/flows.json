@@ -4,27 +4,23 @@
     "type": "tab",
     "label": "CropConnect sensors",
     "disabled": false,
-    "info": "Simulates the humidity and temperature sensors of each farm and publishes the readings to RabbitMQ (exchange sensors.readings, routing key farm.{farmId}.{type}).\n\nEdit the farms in the \"Farms to simulate\" node and deploy."
+    "info": "Simulates the humidity and temperature sensors of each farm and publishes the readings to RabbitMQ (exchange sensors.readings, routing key farm.{farmId}.{type}).\n\nThe farms come from the API gateway (GATEWAY_URL) every minute; the broker from RABBITMQ_HOST and RABBITMQ_PORT."
   },
   {
     "id": "c0ffee0000000002",
     "type": "amqp-broker",
     "name": "CropConnect RabbitMQ",
-    "host": "host.docker.internal",
-    "port": "5673",
+    "host": "${RABBITMQ_HOST}",
+    "port": "${RABBITMQ_PORT}",
     "vhost": "?frameMax=131072",
     "tls": false,
-    "credsFromSettings": false,
-    "credentials": {
-      "username": "guest",
-      "password": "guest"
-    }
+    "credsFromSettings": true
   },
   {
     "id": "c0ffee0000000010",
     "type": "comment",
     "z": "c0ffee0000000001",
-    "name": "1. Set the farm IDs (from Farms.Service) in \"Farms to simulate\" and deploy",
+    "name": "1. Every minute, load the active farms from the API gateway",
     "info": "",
     "x": 290,
     "y": 40,
@@ -34,20 +30,64 @@
     "id": "c0ffee0000000011",
     "type": "inject",
     "z": "c0ffee0000000001",
-    "name": "Farms to simulate",
+    "name": "Every minute",
     "props": [
       {
-        "p": "payload"
+        "p": "url",
+        "v": "${GATEWAY_URL}/api/farms?pageSize=100",
+        "vt": "env"
       }
     ],
-    "repeat": "",
+    "repeat": "60",
     "crontab": "",
     "once": true,
-    "onceDelay": "0.5",
+    "onceDelay": "1",
     "topic": "",
-    "payload": "[{\"farmId\":\"00000000-0000-0000-0000-000000000001\",\"sensorId\":\"sim-farm-1\"}]",
-    "payloadType": "json",
     "x": 170,
+    "y": 100,
+    "wires": [
+      [
+        "c0ffee0000000013"
+      ]
+    ]
+  },
+  {
+    "id": "c0ffee0000000013",
+    "type": "http request",
+    "z": "c0ffee0000000001",
+    "name": "GET /api/farms",
+    "method": "GET",
+    "ret": "obj",
+    "paytoqs": "ignore",
+    "url": "",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "",
+    "senderr": false,
+    "headers": [],
+    "x": 330,
+    "y": 100,
+    "wires": [
+      [
+        "c0ffee0000000014"
+      ]
+    ]
+  },
+  {
+    "id": "c0ffee0000000014",
+    "type": "function",
+    "z": "c0ffee0000000001",
+    "name": "To farms",
+    "func": "// Keeps the previous list when the gateway is not up yet.\nif (msg.statusCode !== 200 || !Array.isArray(msg.payload?.items)) {\n    node.status({ fill: 'red', shape: 'ring', text: 'gateway returned ' + msg.statusCode });\n    return null;\n}\n\nmsg.payload = msg.payload.items.map(farm => ({ farmId: farm.id, sensorId: 'sim-' + farm.id.slice(0, 8) }));\nnode.status({ fill: 'green', shape: 'dot', text: msg.payload.length + ' farm(s)' });\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 510,
     "y": 100,
     "wires": [
       [
@@ -74,7 +114,7 @@
     "from": "",
     "to": "",
     "reg": false,
-    "x": 380,
+    "x": 670,
     "y": 100,
     "wires": []
   },
