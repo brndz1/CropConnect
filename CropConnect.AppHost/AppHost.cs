@@ -86,6 +86,17 @@ var gateway = builder.AddProject<Projects.CropConnect_ApiGateway>("apigateway")
     .WaitFor(sensors)
     .WaitFor(notifications);
 
+// Simulated farm sensors (RF16): Node-RED reads the active farms from the gateway and publishes their readings.
+builder.AddDockerfile("sensor-simulator", "../Simulation/node-red")
+    .WithHttpEndpoint(targetPort: 1880, name: "http")
+    .WithEnvironment("RABBITMQ_HOST", rabbitmq.GetEndpoint("tcp").Property(EndpointProperty.Host))
+    .WithEnvironment("RABBITMQ_PORT", rabbitmq.GetEndpoint("tcp").Property(EndpointProperty.TargetPort))
+    .WithEnvironment("RABBITMQ_USER", rabbitUser)
+    .WithEnvironment("RABBITMQ_PASSWORD", rabbitPassword)
+    .WithEnvironment("GATEWAY_URL", gateway.GetEndpoint("http"))
+    .WaitFor(rabbitmq)
+    .WaitFor(gateway);
+
 builder.AddProject<Projects.CropConnect_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithHttpHealthCheck("/health")

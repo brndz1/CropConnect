@@ -231,6 +231,28 @@ services:
     ports:
       - "${MAILPIT_UI_PORT:-8025}:8025"
 
+  # Simulated farm sensors (RF16), only with --profile simulation so the tests never see random alerts.
+  # Every 30 s it sends a reading per active farm and sensor type; open http://localhost:1881 for the flow.
+  sensor-simulator:
+    profiles: [simulation]
+    build: Simulation/node-red
+    image: cropconnect/sensor-simulator
+    restart: unless-stopped
+    networks: [cropconnect]
+    ports:
+      - "${SIMULATOR_PORT:-1881}:1880"
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      GATEWAY_URL: http://api-gateway:8080
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      api-gateway:
+        condition: service_healthy
+
 networks:
   cropconnect:
 
