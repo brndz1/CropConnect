@@ -89,6 +89,19 @@ public sealed class ProductTests
     }
 
     [Fact]
+    public void Expired_basket_is_final()
+    {
+        var basket = Basket(ProductType.SurpriseBasket);
+        var afterExpiry = Now.AddDays(8);
+
+        Assert.Throws<BusinessRuleException>(() => basket.Update(null, null, null, null, null, afterExpiry.AddDays(7), afterExpiry));
+        Assert.Throws<BusinessRuleException>(() => basket.Update("Cabaz novo", null, null, null, null, null, afterExpiry));
+
+        basket.Delete(afterExpiry);
+        Assert.True(basket.IsDeleted);
+    }
+
+    [Fact]
     public void Update_changes_only_the_given_fields()
     {
         var product = Product.Create(ActiveFarm(), "Batata", "Nova", "kg", 1m, 10, ProductType.Product, null, Now);
