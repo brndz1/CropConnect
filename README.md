@@ -15,7 +15,7 @@ dotnet run --project CropConnect.AppHost
 ```
 
 - The dashboard URL (with its login token) is printed on startup. The resource list links to the gateway,
-  the RabbitMQ management UI and the Mailpit inbox.
+  the RabbitMQ management UI, the Mailpit inbox and the sensor simulator (Node-RED).
 - Traces follow a request from the gateway through the gRPC calls between services, their PostgreSQL
   commands and the RabbitMQ messages they publish and consume.
 - The services use their `appsettings.Development.json` secrets; Aspire only supplies connection strings,
@@ -64,7 +64,9 @@ also published on their own ports for development:
 - Data is kept in the `postgres-data` and `rabbitmq-data` volumes; `docker compose down -v` removes it.
 - Notification emails are caught by Mailpit. To send them through Mailtrap instead, set `EMAIL_PROVIDER=Mailtrap`
   and `MAILTRAP_API_TOKEN` (plus `MAILTRAP_SANDBOX_INBOX_ID` to use a sandbox inbox) in `.env`.
-- To simulate the farm sensors, see [Simulation/node-red](Simulation/node-red/README.md).
+- The farm sensors are simulated by Node-RED, which only starts with the `simulation` profile so the tests
+  never see its random alerts: `docker compose --profile simulation up -d --build`. See
+  [Simulation/node-red](Simulation/node-red/README.md).
 
 Each service can also be built on its own from the repository root, for example:
 
