@@ -15,4 +15,8 @@ public sealed class JwtOptions
 
     [Required]
     public string Audience { get; set; } = string.Empty;
+
+    // How long the gateway trusts Auth.Service's answer that a user is still active.
+    [Range(typeof(TimeSpan), "00:00:00", "00:05:00")]
+    public TimeSpan ActiveUserCacheDuration { get; set; } = TimeSpan.FromSeconds(15);
 }

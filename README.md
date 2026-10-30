@@ -38,7 +38,9 @@ Clients use the REST API of the gateway, which translates each call to gRPC on t
 | API reference (Scalar) | http://localhost:5000/scalar |
 | OpenAPI document | http://localhost:5000/openapi/v1.json |
 
-Log in with `POST /api/auth/login` and send the token as `Authorization: Bearer <token>`. The services are
+Log in with `POST /api/auth/login` and send the token as `Authorization: Bearer <token>`. A deactivated account
+is refused within 15 seconds (`JwtSettings__ActiveUserCacheDuration` on the gateway), without waiting for its token
+to expire. The services are
 also published on their own ports for development:
 
 | Service | gRPC endpoint (h2c) |

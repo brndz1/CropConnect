@@ -48,6 +48,22 @@ public sealed class UsersTests
     }
 
     [Fact]
+    public async Task Deactivated_user_loses_access_without_waiting_for_the_token_to_expire()
+    {
+        var admin = await AdminTokenAsync();
+        var client = await RegisterAsync("Client");
+        Assert.Equal(HttpStatusCode.OK, (await GetAsync("api/orders/mine", client.Token)).Status);
+
+        await PutAsync($"api/users/{client.Id}/active", new { isActive = false }, admin);
+
+        // The gateway caches that a user is active for a few seconds.
+        await Eventually.GetAsync(
+            () => GetAsync("api/orders/mine", client.Token),
+            response => response.Status == HttpStatusCode.Unauthorized,
+            because: "the deactivated user's token to be refused");
+    }
+
+    [Fact]
     public async Task Clients_cannot_manage_users()
     {
         var client = await RegisterAsync("Client");

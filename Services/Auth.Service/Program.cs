@@ -17,6 +17,12 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("AuthDb")));
 builder.Services.AddHealthChecks().AddCheck<AuthDbHealthCheck>("auth-db");
 
+// Fail at startup rather than on the first login; the secret only ships in the Development settings.
+if (string.IsNullOrWhiteSpace(builder.Configuration["JwtSettings:Secret"]))
+{
+    throw new InvalidOperationException("JwtSettings:Secret is not configured.");
+}
+
 builder.Services.AddScoped<JwtTokenGenerator>();
 builder.Services.AddSingleton<JwtTokenValidator>();
 
