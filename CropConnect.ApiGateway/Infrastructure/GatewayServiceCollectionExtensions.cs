@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Grpc.Net.ClientFactory;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using AuthGrpc = Auth.Service.Protos;
 using FarmsGrpc = Farms.Service.Protos;
@@ -62,11 +63,27 @@ public static class GatewayServiceCollectionExtensions
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.FromSeconds(30)
                 };
+
+                bearer.Events = new JwtBearerEvents { OnTokenValidated = RejectDeactivatedUsersAsync };
             });
 
+        services.AddMemoryCache();
+        services.AddTransient<ActiveUserCheck>();
         services.AddAuthorization();
 
         return services;
+    }
+
+    private static async Task RejectDeactivatedUsersAsync(TokenValidatedContext context)
+    {
+        var userId = context.Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        var token = (context.SecurityToken as JsonWebToken)?.EncodedToken;
+        var check = context.HttpContext.RequestServices.GetRequiredService<ActiveUserCheck>();
+
+        if (userId is null || token is null || !await check.IsActiveAsync(userId, token, context.HttpContext.RequestAborted))
+        {
+            context.Fail("The account is deactivated.");
+        }
     }
 
     #endregion
