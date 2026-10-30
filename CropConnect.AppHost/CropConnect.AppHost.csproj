@@ -16,7 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CropConnect.ApiGateway\CropConnect.ApiGateway.csproj" />
-    <ProjectReference Include="..\CropConnect.Web\CropConnect.Web.csproj" />
     <ProjectReference Include="..\Services\Auth.Service\Auth.Service.csproj" />
     <ProjectReference Include="..\Services\Users.Service\Users.Service.csproj" />
     <ProjectReference Include="..\Services\Farms.Service\Farms.Service.csproj" />

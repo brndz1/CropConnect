@@ -97,12 +97,6 @@ builder.AddDockerfile("sensor-simulator", "../Simulation/node-red")
     .WaitFor(rabbitmq)
     .WaitFor(gateway);
 
-builder.AddProject<Projects.CropConnect_Web>("webfrontend")
-    .WithExternalHttpEndpoints()
-    .WithHttpHealthCheck("/health")
-    .WithReference(gateway)
-    .WaitFor(gateway);
-
 #endregion
 
 builder.Build().Run();
