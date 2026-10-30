@@ -1,0 +1,22 @@
+{
+  "solution": {
+    "path": "CropConnect.sln",
+    "projects": [
+      "tests/Auth.Service.Tests/Auth.Service.Tests.csproj",
+      "tests/Users.Service.Tests/Users.Service.Tests.csproj",
+      "tests/Farms.Service.Tests/Farms.Service.Tests.csproj",
+      "tests/Orders.Service.Tests/Orders.Service.Tests.csproj",
+      "tests/Sensors.Service.Tests/Sensors.Service.Tests.csproj",
+      "tests/Notifications.Service.Tests/Notifications.Service.Tests.csproj",
+      "tests/CropConnect.ApiGateway.Tests/CropConnect.ApiGateway.Tests.csproj",
+      "Services/Auth.Service/Auth.Service.csproj",
+      "Services/Users.Service/Users.Service.csproj",
+      "Services/Farms.Service/Farms.Service.csproj",
+      "Services/Orders.Service/Orders.Service.csproj",
+      "Services/Sensors.Service/Sensors.Service.csproj",
+      "Services/Notifications.Service/Notifications.Service.csproj",
+      "CropConnect.ApiGateway/CropConnect.ApiGateway.csproj",
+      "CropConnect.ServiceDefaults/CropConnect.ServiceDefaults.csproj"
+    ]
+  }
+}

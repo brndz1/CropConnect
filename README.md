@@ -77,6 +77,20 @@ Each service can also be built on its own from the repository root, for example:
 docker build -f Services/Auth.Service/Dockerfile -t cropconnect/auth-service .
 ```
 
+## Unit tests
+
+Each service has a unit test project in `tests/` (`Auth.Service.Tests`, `Orders.Service.Tests`, ...,
+`CropConnect.ApiGateway.Tests`). They cover the domain rules, who may do what, and the application services,
+which run against an in-memory SQLite database built from the real EF Core model, with fakes for the other
+services, the broker and the email provider. They need nothing running:
+
+```bash
+dotnet test CropConnect.UnitTests.slnf
+```
+
+The few paths that depend on PostgreSQL itself (row locks with `FOR UPDATE`, `ILIKE` search) are left to the
+end-to-end tests.
+
 ## End-to-end tests
 
 `tests/CropConnect.EndToEndTests` tests the running platform from the outside, the way clients use it: through
@@ -88,8 +102,8 @@ docker compose up -d --build --wait
 dotnet test tests/CropConnect.EndToEndTests --filter "Category!=Resilience"
 ```
 
-GitHub Actions (`.github/workflows/ci.yml`) builds the solution and runs both suites against Docker Compose
-on every pull request and on `main`.
+GitHub Actions (`.github/workflows/ci.yml`) builds the solution, runs the unit tests and then both end-to-end
+suites against Docker Compose, on every pull request and on `main`.
 
 The resilience tests stop and restart containers to check that orders and emails survive an outage of
 Notifications or of the mail server, so they run on their own:

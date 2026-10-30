@@ -18,7 +18,7 @@ env:
 
 jobs:
   build:
-    name: Build
+    name: Build and unit tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -29,6 +29,9 @@ jobs:
 
       - name: Build the solution
         run: dotnet build CropConnect.sln -c Release
+
+      - name: Run the unit tests
+        run: dotnet test CropConnect.UnitTests.slnf -c Release --no-build --logger "console;verbosity=normal"
 
   end-to-end:
     name: End-to-end tests
