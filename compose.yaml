@@ -1,6 +1,8 @@
 # Local environment with every service, PostgreSQL and RabbitMQ:
 #   docker compose up -d --build
 # The defaults are for development only; override them in a .env file (see .env.example).
+# Only the API gateway is reachable from other machines; the services and the infrastructure are published on
+# 127.0.0.1 for local debugging and the tests (section 5.1: the services are not exposed to the outside).
 
 name: cropconnect
 
@@ -30,7 +32,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
-      - "${POSTGRES_PORT:-5440}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5440}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -47,8 +49,8 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
     ports:
-      - "${RABBITMQ_PORT:-5673}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT:-15673}:15672"
+      - "127.0.0.1:${RABBITMQ_PORT:-5673}:5672"
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15673}:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -64,7 +66,7 @@ services:
       dockerfile: Services/Auth.Service/Dockerfile
     image: cropconnect/auth-service
     ports:
-      - "5298:8080"
+      - "127.0.0.1:5298:8080"
     environment:
       <<: [*jwt, *database, *telemetry]
       OTEL_SERVICE_NAME: auth-service
@@ -85,7 +87,7 @@ services:
       dockerfile: Services/Users.Service/Dockerfile
     image: cropconnect/users-service
     ports:
-      - "5001:8080"
+      - "127.0.0.1:5001:8080"
     environment:
       <<: [*jwt, *database, *telemetry]
       OTEL_SERVICE_NAME: users-service
@@ -101,7 +103,7 @@ services:
       dockerfile: Services/Farms.Service/Dockerfile
     image: cropconnect/farms-service
     ports:
-      - "5002:8080"
+      - "127.0.0.1:5002:8080"
     environment:
       <<: [*jwt, *database, *telemetry]
       OTEL_SERVICE_NAME: farms-service
@@ -118,7 +120,7 @@ services:
       dockerfile: Services/Orders.Service/Dockerfile
     image: cropconnect/orders-service
     ports:
-      - "5003:8080"
+      - "127.0.0.1:5003:8080"
     environment:
       <<: [*jwt, *database, *telemetry]
       OTEL_SERVICE_NAME: orders-service
@@ -145,7 +147,7 @@ services:
       dockerfile: Services/Sensors.Service/Dockerfile
     image: cropconnect/sensors-service
     ports:
-      - "5004:8080"
+      - "127.0.0.1:5004:8080"
     environment:
       <<: [*jwt, *database, *telemetry]
       OTEL_SERVICE_NAME: sensors-service
@@ -172,7 +174,7 @@ services:
       dockerfile: Services/Notifications.Service/Dockerfile
     image: cropconnect/notifications-service
     ports:
-      - "5005:8080"
+      - "127.0.0.1:5005:8080"
     environment:
       <<: [*jwt, *database, *telemetry]
       OTEL_SERVICE_NAME: notifications-service
@@ -241,7 +243,7 @@ services:
     restart: unless-stopped
     networks: [cropconnect]
     ports:
-      - "${MAILPIT_UI_PORT:-8025}:8025"
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
 
   # Aspire dashboard on its own: the logs, distributed traces and metrics the services export over OTLP.
   # It has no login, so it is only published on 127.0.0.1.
@@ -263,7 +265,7 @@ services:
     restart: unless-stopped
     networks: [cropconnect]
     ports:
-      - "${SIMULATOR_PORT:-1881}:1880"
+      - "127.0.0.1:${SIMULATOR_PORT:-1881}:1880"
     environment:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: "5672"

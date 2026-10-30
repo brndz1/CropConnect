@@ -126,6 +126,12 @@ public class Product : VersionedEntity
         DateTime now,
         string? contents = null)
     {
+        // Expired is a final state (section 4.3): a past pickup date cannot be pushed back to reopen the basket.
+        if (IsExpired(now))
+        {
+            throw new BusinessRuleException("The seasonal basket has expired and can no longer be changed.");
+        }
+
         var newName = name is null ? Name : Guard.Required(name, "Name", FieldLimits.NameMaxLength);
         var newDescription = description is null ? Description : Guard.Optional(description, "Description", FieldLimits.DescriptionMaxLength);
         var newUnit = unit is null ? Unit : Guard.Required(unit, "Unit", FieldLimits.UnitMaxLength);

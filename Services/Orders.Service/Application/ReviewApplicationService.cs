@@ -79,7 +79,7 @@ public sealed class ReviewApplicationService : IReviewApplicationService
             throw new NotFoundException(ErrorMessages.ReviewNotFound);
         }
 
-        caller.EnsureCanView(review.Order);
+        caller.EnsureCanView(review.Order ?? throw new NotFoundException(ErrorMessages.OrderNotFound));
         return ToResult(review);
     }
 

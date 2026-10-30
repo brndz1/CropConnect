@@ -12,11 +12,12 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.5.4" />
     <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.5.4" />
+    <!-- Aspire.Hosting brings in MessagePack 2.5.302, flagged by GHSA-qhrr-8q5h-9q3h; pinned to the patched 2.5 release. -->
+    <PackageReference Include="MessagePack" Version="2.5.307" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CropConnect.ApiGateway\CropConnect.ApiGateway.csproj" />
-    <ProjectReference Include="..\CropConnect.Web\CropConnect.Web.csproj" />
     <ProjectReference Include="..\Services\Auth.Service\Auth.Service.csproj" />
     <ProjectReference Include="..\Services\Users.Service\Users.Service.csproj" />
     <ProjectReference Include="..\Services\Farms.Service\Farms.Service.csproj" />
