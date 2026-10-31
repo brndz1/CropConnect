@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Http.Resilience;
@@ -26,6 +27,18 @@ public static class Extensions
         builder.AddDefaultHealthChecks();
 
         builder.Services.AddServiceDiscovery();
+
+        // Kubernetes: each service has a headless Service whose DNS name lists every ready replica. Resolving it
+        // here spreads the gRPC calls over the replicas one call at a time; through a ClusterIP, a long-lived
+        // HTTP/2 connection would keep every call on the same pod.
+        if (builder.Configuration.GetValue<bool>("ServiceDiscovery:UseDns"))
+        {
+            builder.Services.AddDnsServiceEndpointProvider(options =>
+            {
+                options.DefaultRefreshPeriod = TimeSpan.FromSeconds(10);
+                options.ShouldApplyHostNameMetadata = _ => true;
+            });
+        }
 
         builder.Services.ConfigureHttpClientDefaults(http =>
         {
