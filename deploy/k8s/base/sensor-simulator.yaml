@@ -1,0 +1,54 @@
+# Simulated farm sensors (Node-RED, RF16): every minute, a reading per active farm and sensor type.
+# Stop it when it is not needed: kubectl -n cropconnect scale deployment/sensor-simulator --replicas=0
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sensor-simulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sensor-simulator
+  template:
+    metadata:
+      labels:
+        app: sensor-simulator
+    spec:
+      containers:
+        - name: sensor-simulator
+          image: cropconnect/sensor-simulator
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 1880
+          env:
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: RABBITMQ_USER }
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: RABBITMQ_PASSWORD }
+            - name: GATEWAY_URL
+              value: http://api-gateway
+          readinessProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 20m, memory: 128Mi }
+            limits: { memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sensor-simulator
+spec:
+  selector:
+    app: sensor-simulator
+  ports:
+    - name: http
+      port: 1880
+      targetPort: http

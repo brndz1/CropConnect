@@ -1,0 +1,75 @@
+# Horizontal scaling: another replica whenever the average CPU per replica passes 70m (0.07 vCPU), up to three;
+# back to one when idle. The stateless gateway and the services on the busiest paths (catalog, orders, sensor
+# readings) scale; their background workers stay safe with several replicas (advisory locks, competing RabbitMQ
+# consumers).
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-gateway
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: api-gateway }
+  minReplicas: 1
+  maxReplicas: 3
+  # Only scale up on load that lasts: a new pod burns CPU for a minute while it starts (JIT, migrations).
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 120
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: AverageValue, averageValue: 70m }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: farms-service
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: farms-service }
+  minReplicas: 1
+  maxReplicas: 3
+  # Only scale up on load that lasts: a new pod burns CPU for a minute while it starts (JIT, migrations).
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 120
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: AverageValue, averageValue: 70m }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: orders-service
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: orders-service }
+  minReplicas: 1
+  maxReplicas: 3
+  # Only scale up on load that lasts: a new pod burns CPU for a minute while it starts (JIT, migrations).
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 120
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: AverageValue, averageValue: 70m }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: sensors-service
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: sensors-service }
+  minReplicas: 1
+  maxReplicas: 3
+  # Only scale up on load that lasts: a new pod burns CPU for a minute while it starts (JIT, migrations).
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 120
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: AverageValue, averageValue: 70m }

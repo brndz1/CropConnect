@@ -1,3 +1,4 @@
+using Farms.Service.Data;
 using Microsoft.Extensions.Options;
 
 namespace Farms.Service.Application;
@@ -48,6 +49,14 @@ public sealed class ReservationExpiryWorker : BackgroundService
         try
         {
             await using var scope = _scopeFactory.CreateAsyncScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<FarmsDbContext>();
+            await using var workerLock = await WorkerLock.TryAcquireAsync(dbContext, WorkerLock.ReservationExpiry, stoppingToken);
+
+            if (workerLock is null)
+            {
+                return;
+            }
+
             var stock = scope.ServiceProvider.GetRequiredService<IStockApplicationService>();
 
             int expired;

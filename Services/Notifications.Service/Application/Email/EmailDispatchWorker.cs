@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using Notifications.Service.Data;
 
 namespace Notifications.Service.Application.Email;
 
@@ -37,6 +38,16 @@ public sealed class EmailDispatchWorker : BackgroundService
             try
             {
                 await using var scope = _scopeFactory.CreateAsyncScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<NotificationsDbContext>();
+
+                // Another replica is sending: two senders could both pick the same email before either saves it.
+                await using var workerLock = await WorkerLock.TryAcquireAsync(dbContext, WorkerLock.EmailDispatch, stoppingToken);
+
+                if (workerLock is null)
+                {
+                    continue;
+                }
+
                 var dispatcher = scope.ServiceProvider.GetRequiredService<IEmailDispatchService>();
                 var sent = await dispatcher.DispatchDueAsync(stoppingToken);
 

@@ -1,0 +1,77 @@
+# User profiles.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users-service
+  template:
+    metadata:
+      labels:
+        app: users-service
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      initContainers:
+        # No depends_on in Kubernetes: wait for the infrastructure instead of crash-looping until it is up.
+        - name: wait-for-infrastructure
+          image: busybox:1.37
+          command: ["sh", "-c", "until nc -z postgres 5432; do echo waiting; sleep 2; done"]
+          securityContext:
+            runAsUser: 1000
+      containers:
+        - name: users-service
+          image: cropconnect/users-service
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: grpc
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: cropconnect-config
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: users-service
+            - name: JwtSettings__Secret
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: JWT_SECRET }
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: POSTGRES_USER }
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: POSTGRES_PASSWORD }
+            - name: ConnectionStrings__UsersDb
+              value: Host=postgres;Database=users_db;Username=$(POSTGRES_USER);Password=$(POSTGRES_PASSWORD)
+          # Kestrel speaks only HTTP/2 (gRPC), so the probes use curl with prior knowledge instead of httpGet.
+          readinessProbe:
+            exec:
+              command: ["curl", "-fsS", "--http2-prior-knowledge", "http://localhost:8080/health"]
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            exec:
+              command: ["curl", "-fsS", "--http2-prior-knowledge", "http://localhost:8080/alive"]
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 3
+          resources:
+            requests: { cpu: 50m, memory: 160Mi }
+            limits: { cpu: 500m, memory: 400Mi }
+---
+# Headless: the DNS name lists every ready replica, so callers can spread their gRPC calls over them.
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-service
+spec:
+  clusterIP: None
+  selector:
+    app: users-service
+  ports:
+    - name: grpc
+      port: 8080
+      targetPort: grpc

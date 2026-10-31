@@ -1,0 +1,35 @@
+# Azure Kubernetes Service: images from the Azure Container Registry and the secrets of secrets.env, which
+# deploy/azure/deploy.ps1 generates with random values and is never committed.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cropconnect
+resources:
+  - ../../base
+secretGenerator:
+  - name: cropconnect-secrets
+    envs:
+      - secrets.env
+images:
+  - name: cropconnect/auth-service
+    newName: cropconnect16641.azurecr.io/auth-service
+  - name: cropconnect/users-service
+    newName: cropconnect16641.azurecr.io/users-service
+  - name: cropconnect/farms-service
+    newName: cropconnect16641.azurecr.io/farms-service
+  - name: cropconnect/orders-service
+    newName: cropconnect16641.azurecr.io/orders-service
+  - name: cropconnect/sensors-service
+    newName: cropconnect16641.azurecr.io/sensors-service
+  - name: cropconnect/notifications-service
+    newName: cropconnect16641.azurecr.io/notifications-service
+  - name: cropconnect/api-gateway
+    newName: cropconnect16641.azurecr.io/api-gateway
+  - name: cropconnect/sensor-simulator
+    newName: cropconnect16641.azurecr.io/sensor-simulator
+patches:
+  # Every deploy pushes new "latest" images, so the nodes must check the registry on each pod start.
+  - target: { kind: Deployment }
+    patch: |
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
