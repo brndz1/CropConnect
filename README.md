@@ -128,3 +128,8 @@ dotnet test tests/CropConnect.EndToEndTests --filter "Category=Resilience"
 
 To test another environment (e.g. the Aspire AppHost), set `CROPCONNECT_GATEWAY_URL`,
 `CROPCONNECT_RABBITMQ_MANAGEMENT_URL` and `CROPCONNECT_MAILPIT_URL`.
+
+## Postman
+
+The [Postman collection](postman/README.md) runs the same business flows through the REST API, against Docker
+Compose or Azure, from Postman or with Newman.
