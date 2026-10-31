@@ -5,6 +5,7 @@
 CropConnect - Agricultural Management &amp; Marketplace Platform
 
 The architecture, data model, RabbitMQ events, gRPC contracts and REST API are described in [docs](docs/README.md).
+The web app (React, TypeScript and shadcn/ui) is in [web](web/README.md).
 
 ## Running with .NET Aspire
 
@@ -16,8 +17,8 @@ traces and metrics:
 dotnet run --project CropConnect.AppHost
 ```
 
-- The dashboard URL (with its login token) is printed on startup. The resource list links to the gateway,
-  the RabbitMQ management UI, the Mailpit inbox and the sensor simulator (Node-RED).
+- The dashboard URL (with its login token) is printed on startup. The resource list links to the web app, the
+  gateway, the RabbitMQ management UI, the Mailpit inbox and the sensor simulator (Node-RED).
 - Traces follow a request from the gateway through the gRPC calls between services, their PostgreSQL
   commands and the RabbitMQ messages they publish and consume.
 - The services use their `appsettings.Development.json` secrets; Aspire only supplies connection strings,
@@ -32,10 +33,11 @@ dotnet run --project CropConnect.AppHost
 docker compose up -d --build
 ```
 
-Clients use the REST API of the gateway, which translates each call to gRPC on the owning service:
+Clients use the web app, or the REST API of the gateway, which translates each call to gRPC on the owning service:
 
 | Entry point | Address |
 |---|---|
+| Web app | http://localhost:3000 |
 | API Gateway (REST) | http://localhost:5000/api |
 | API reference (Scalar) | http://localhost:5000/scalar |
 | OpenAPI document | http://localhost:5000/openapi/v1.json |

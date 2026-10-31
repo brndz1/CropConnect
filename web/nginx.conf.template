@@ -1,0 +1,54 @@
+server {
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+
+    # The REST API and its health check go to the gateway.
+    location /api/ {
+        proxy_pass ${GATEWAY_URL};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
+    }
+
+    # The API's health check, its OpenAPI document and the Scalar reference UI.
+    location = /health {
+        proxy_pass ${GATEWAY_URL}/health;
+    }
+
+    location ~ ^/(openapi|scalar)/ {
+        proxy_pass ${GATEWAY_URL};
+        proxy_set_header Host $host;
+    }
+
+    # The web server itself, for the container and Kubernetes probes.
+    location = /healthz {
+        access_log off;
+        return 200 "ok";
+    }
+
+    # Built files have a hash in their name, so they never change.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        add_header X-Content-Type-Options nosniff always;
+    }
+
+    # Client-side routes (/explorar, /gestor/...) all load the app.
+    location / {
+        try_files $uri /index.html;
+        add_header Cache-Control "no-cache";
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-Frame-Options DENY always;
+        add_header Referrer-Policy strict-origin-when-cross-origin always;
+    }
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+}

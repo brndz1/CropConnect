@@ -1,4 +1,4 @@
-# The only public entry point: REST/JSON from clients, gRPC to the services.
+# REST/JSON from clients (through the web app), gRPC to the services.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -42,16 +42,15 @@ spec:
             requests: { cpu: 50m, memory: 160Mi }
             limits: { cpu: 500m, memory: 400Mi }
 ---
-# A public IP on Azure (the cloud load balancer); localhost on Docker Desktop.
+# Inside the cluster only: clients reach it through the web app's nginx (web.yaml).
 apiVersion: v1
 kind: Service
 metadata:
   name: api-gateway
 spec:
-  type: LoadBalancer
   selector:
     app: api-gateway
   ports:
     - name: http
-      port: 80
+      port: 8080
       targetPort: http

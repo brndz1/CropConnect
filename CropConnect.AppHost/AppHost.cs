@@ -97,6 +97,14 @@ builder.AddDockerfile("sensor-simulator", "../Simulation/node-red")
     .WaitFor(rabbitmq)
     .WaitFor(gateway);
 
+// The web app, served by nginx, which forwards /api to the gateway.
+builder.AddDockerfile("web", "../web")
+    .WithHttpEndpoint(targetPort: 8080, name: "http")
+    .WithExternalHttpEndpoints()
+    .WithEnvironment("GATEWAY_URL", gateway.GetEndpoint("http"))
+    .WithHttpHealthCheck("/healthz")
+    .WaitFor(gateway);
+
 #endregion
 
 builder.Build().Run();

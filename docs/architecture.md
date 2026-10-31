@@ -50,6 +50,7 @@ flowchart LR
 | Sensors.Service | Readings, global thresholds, alerts with the rain forecast | RF04, RF16-RF18 |
 | Notifications.Service | Turns events into in-app notifications and emails | RF19-RF21 |
 | API Gateway | The only REST entry point: JWT validation, routing to gRPC, OpenAPI | RNF04 |
+| Web app | React front end for the three profiles, served by nginx, which forwards `/api` to the gateway ([web](../web/README.md)) | All the profiles' screens |
 
 ## Communication
 
@@ -130,7 +131,7 @@ Under Aspire and in Docker Compose the telemetry goes to the Aspire dashboard.
 ## Deployment (RNF06)
 
 Every service has a multi-stage Dockerfile and runs as a non-root user. `compose.yaml` starts the whole system
-(only the gateway is published beyond `127.0.0.1`), and the Aspire AppHost runs it for development. In the cloud it
+(only the web app and the gateway are published beyond `127.0.0.1`), and the Aspire AppHost runs it for development. In the cloud it
 runs on Azure Kubernetes Service, with autoscaling of the gateway and the busiest services (see
 [deploy](../deploy/README.md)). GitHub Actions
 builds the solution, runs the unit tests and then the end-to-end tests against Compose on every pull request.

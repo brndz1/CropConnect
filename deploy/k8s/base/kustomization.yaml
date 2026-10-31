@@ -19,5 +19,6 @@ resources:
   - sensors-service.yaml
   - notifications-service.yaml
   - api-gateway.yaml
+  - web.yaml
   - sensor-simulator.yaml
   - autoscaling.yaml

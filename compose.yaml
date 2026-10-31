@@ -237,6 +237,19 @@ services:
       notifications-service:
         condition: service_healthy
 
+  # The web app (http://localhost:3000); nginx serves it and forwards /api to the gateway.
+  web:
+    <<: *service
+    build: web
+    image: cropconnect/web
+    ports:
+      - "${WEB_PORT:-3000}:8080"
+    environment:
+      GATEWAY_URL: http://api-gateway:8080
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+
   # Catches every email locally; open http://localhost:8025 to read them.
   mailpit:
     image: axllent/mailpit:v1.27
