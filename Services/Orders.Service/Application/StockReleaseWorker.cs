@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using Orders.Service.Data;
 
 namespace Orders.Service.Application;
 
@@ -48,6 +49,14 @@ public sealed class StockReleaseWorker : BackgroundService
         try
         {
             await using var scope = _scopeFactory.CreateAsyncScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
+            await using var workerLock = await WorkerLock.TryAcquireAsync(dbContext, WorkerLock.StockRelease, stoppingToken);
+
+            if (workerLock is null)
+            {
+                return;
+            }
+
             var orders = scope.ServiceProvider.GetRequiredService<IOrderApplicationService>();
 
             var released = await orders.ReleasePendingStockAsync(stoppingToken);

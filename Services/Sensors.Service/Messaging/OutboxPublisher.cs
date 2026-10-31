@@ -61,6 +61,14 @@ public sealed class OutboxPublisher : BackgroundService
             await using var scope = _scopeFactory.CreateAsyncScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<SensorsDbContext>();
 
+            // Another replica is publishing: one publisher at a time keeps the events in order.
+            await using var workerLock = await WorkerLock.TryAcquireAsync(dbContext, WorkerLock.OutboxPublisher, stoppingToken);
+
+            if (workerLock is null)
+            {
+                return;
+            }
+
             var pending = await dbContext.OutboxMessages
                 .Where(m => m.PublishedAt == null)
                 .OrderBy(m => m.OccurredAt)
