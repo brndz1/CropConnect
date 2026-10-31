@@ -83,6 +83,12 @@ Each service can also be built on its own from the repository root, for example:
 docker build -f Services/Auth.Service/Dockerfile -t cropconnect/auth-service .
 ```
 
+## Running on Kubernetes and Azure
+
+The same images run on Kubernetes, locally on Docker Desktop or in the cloud on Azure Kubernetes Service, with
+horizontal autoscaling and scripts to create, deploy, stop and start the Azure environment. See
+[deploy](deploy/README.md).
+
 ## Unit tests
 
 Each service has a unit test project in `tests/` (`Auth.Service.Tests`, `Orders.Service.Tests`, ...,

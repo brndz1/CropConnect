@@ -130,5 +130,7 @@ Under Aspire and in Docker Compose the telemetry goes to the Aspire dashboard.
 ## Deployment (RNF06)
 
 Every service has a multi-stage Dockerfile and runs as a non-root user. `compose.yaml` starts the whole system
-(only the gateway is published beyond `127.0.0.1`), and the Aspire AppHost runs it for development. GitHub Actions
+(only the gateway is published beyond `127.0.0.1`), and the Aspire AppHost runs it for development. In the cloud it
+runs on Azure Kubernetes Service, with autoscaling of the gateway and the busiest services (see
+[deploy](../deploy/README.md)). GitHub Actions
 builds the solution, runs the unit tests and then the end-to-end tests against Compose on every pull request.
