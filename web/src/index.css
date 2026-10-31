@@ -1,0 +1,123 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "@fontsource/poppins/700.css";
+@import "@fontsource/lato/400.css";
+@import "@fontsource/lato/700.css";
+
+/* The app has a light theme only: dark: classes apply under a .dark ancestor, never from the OS setting. */
+@custom-variant dark (&:is(.dark *));
+
+/* CropConnect visual system (report section 6): Verde Horta as the primary colour on a white background,
+   Poppins for titles, buttons and numbers, Lato for body text. Only these tokens are used in the screens. */
+
+@theme inline {
+  --font-heading: "Poppins", sans-serif;
+  --font-sans: "Lato", sans-serif;
+
+  --color-brand-900: var(--brand-900);
+  --color-brand-700: var(--brand-700);
+  --color-brand-100: var(--brand-100);
+  --color-terracotta: var(--terracotta);
+  --color-olive: var(--olive);
+  --color-surface: var(--surface);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-outline: var(--outline);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Radii: 8 for fields and chips, 12 for cards, 16 for sheets and dialogs. */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  --radius-4xl: 2rem;
+}
+
+:root {
+  /* Brand */
+  --brand-900: #0f4a1e;
+  --brand-700: #16722f;
+  --brand-100: #e3f1e5;
+  --terracotta: #b0561b;
+  --olive: #86901a;
+  /* Neutrals */
+  --ink: #1e2621;
+  --ink-secondary: #56615a;
+  --surface: #f4f6f3;
+  /* Semantic: never on their own, always with an icon and text */
+  --success: #2e7d32;
+  --warning: #f2b705;
+  --info: #1f5fa8;
+  --outline: #6f7a73;
+
+  --background: #ffffff;
+  --foreground: var(--ink);
+  --card: #ffffff;
+  --card-foreground: var(--ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink);
+  --primary: var(--brand-700);
+  --primary-foreground: #ffffff;
+  --secondary: var(--brand-100);
+  --secondary-foreground: var(--brand-900);
+  --muted: var(--surface);
+  --muted-foreground: var(--ink-secondary);
+  --accent: var(--brand-100);
+  --accent-foreground: var(--brand-900);
+  --destructive: #b3261e;
+  --border: #cbd3cd;
+  --input: var(--outline);
+  --ring: var(--brand-700);
+  --radius: 0.75rem;
+
+  --chart-1: var(--brand-700);
+  --chart-2: var(--terracotta);
+  --chart-3: var(--info);
+  --chart-4: var(--olive);
+  --chart-5: var(--success);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading text-brand-900;
+  }
+}
