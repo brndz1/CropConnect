@@ -13,6 +13,15 @@ spec:
       labels:
         app: rabbitmq
     spec:
+      # A new cloud disk belongs to root: hand it to the rabbitmq user (999), whose Erlang cookie must stay
+      # readable by its owner only. Without it, the first start fails to read the cookie (eacces).
+      initContainers:
+        - name: volume-permissions
+          image: busybox:1.37
+          command: ["sh", "-c", "chown -R 999:999 /var/lib/rabbitmq && (chmod 600 /var/lib/rabbitmq/.erlang.cookie 2>/dev/null || true)"]
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/rabbitmq
       containers:
         - name: rabbitmq
           image: rabbitmq:4-management
@@ -40,7 +49,7 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 15
           resources:
-            requests: { cpu: 100m, memory: 256Mi }
+            requests: { cpu: 50m, memory: 256Mi }
             limits: { memory: 512Mi }
           volumeMounts:
             - name: data

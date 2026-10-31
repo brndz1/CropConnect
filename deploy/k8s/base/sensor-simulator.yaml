@@ -38,7 +38,7 @@ spec:
             httpGet: { path: /, port: http }
             periodSeconds: 15
           resources:
-            requests: { cpu: 50m, memory: 128Mi }
+            requests: { cpu: 20m, memory: 128Mi }
             limits: { memory: 256Mi }
 ---
 apiVersion: v1

@@ -71,7 +71,7 @@ spec:
             periodSeconds: 15
             timeoutSeconds: 3
           resources:
-            requests: { cpu: 100m, memory: 160Mi }
+            requests: { cpu: 50m, memory: 160Mi }
             limits: { cpu: 500m, memory: 400Mi }
 ---
 # Headless: the DNS name lists every ready replica, so callers can spread their gRPC calls over them.
