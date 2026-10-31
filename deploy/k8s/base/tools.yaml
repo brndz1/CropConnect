@@ -1,0 +1,88 @@
+# Development tools inside the cluster. Neither has a login, so they are never exposed: open them with
+# kubectl port-forward (see deploy/README.md).
+
+# Catches every notification email.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailpit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailpit
+  template:
+    metadata:
+      labels:
+        app: mailpit
+    spec:
+      containers:
+        - name: mailpit
+          image: axllent/mailpit:v1.27
+          ports:
+            - name: http
+              containerPort: 8025
+            - name: smtp
+              containerPort: 1025
+          readinessProbe:
+            httpGet: { path: /livez, port: http }
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { memory: 128Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailpit
+spec:
+  selector:
+    app: mailpit
+  ports:
+    - name: http
+      port: 8025
+      targetPort: http
+---
+# Logs, distributed traces and metrics of every service (OTLP on 18889, UI on 18888).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aspire-dashboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aspire-dashboard
+  template:
+    metadata:
+      labels:
+        app: aspire-dashboard
+    spec:
+      containers:
+        - name: aspire-dashboard
+          image: mcr.microsoft.com/dotnet/aspire-dashboard:13.5
+          ports:
+            - name: ui
+              containerPort: 18888
+            - name: otlp
+              containerPort: 18889
+          env:
+            - name: ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS
+              value: "true"
+          resources:
+            requests: { cpu: 50m, memory: 256Mi }
+            limits: { memory: 768Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aspire-dashboard
+spec:
+  selector:
+    app: aspire-dashboard
+  ports:
+    - name: ui
+      port: 18888
+      targetPort: ui
+    - name: otlp
+      port: 18889
+      targetPort: otlp

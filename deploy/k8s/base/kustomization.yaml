@@ -1,0 +1,23 @@
+# The whole platform in the cropconnect namespace. Apply an overlay, not this folder: the overlay adds the
+# cropconnect-secrets Secret and the image names (deploy/k8s/overlays/local or azure).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cropconnect
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: cropconnect
+resources:
+  - namespace.yaml
+  - config.yaml
+  - postgres.yaml
+  - rabbitmq.yaml
+  - tools.yaml
+  - auth-service.yaml
+  - users-service.yaml
+  - farms-service.yaml
+  - orders-service.yaml
+  - sensors-service.yaml
+  - notifications-service.yaml
+  - api-gateway.yaml
+  - sensor-simulator.yaml
+  - autoscaling.yaml

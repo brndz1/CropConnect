@@ -1,0 +1,89 @@
+# Orders and reviews; publishes the order events (outbox).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orders-service
+  template:
+    metadata:
+      labels:
+        app: orders-service
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      initContainers:
+        # No depends_on in Kubernetes: wait for the infrastructure instead of crash-looping until it is up.
+        - name: wait-for-infrastructure
+          image: busybox:1.37
+          command: ["sh", "-c", "until nc -z postgres 5432 && nc -z rabbitmq 5672; do echo waiting; sleep 2; done"]
+          securityContext:
+            runAsUser: 1000
+      containers:
+        - name: orders-service
+          image: cropconnect/orders-service
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: grpc
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: cropconnect-config
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: orders-service
+            - name: JwtSettings__Secret
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: JWT_SECRET }
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: POSTGRES_USER }
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: POSTGRES_PASSWORD }
+            - name: ConnectionStrings__OrdersDb
+              value: Host=postgres;Database=orders_db;Username=$(POSTGRES_USER);Password=$(POSTGRES_PASSWORD)
+            - name: InternalApi__ApiKey
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: INTERNAL_API_KEY }
+            - name: FarmsService__ApiKey
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: INTERNAL_API_KEY }
+            - name: RabbitMq__UserName
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: RABBITMQ_USER }
+            - name: RabbitMq__Password
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: RABBITMQ_PASSWORD }
+          # Kestrel speaks only HTTP/2 (gRPC), so the probes use curl with prior knowledge instead of httpGet.
+          readinessProbe:
+            exec:
+              command: ["curl", "-fsS", "--http2-prior-knowledge", "http://localhost:8080/health"]
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            exec:
+              command: ["curl", "-fsS", "--http2-prior-knowledge", "http://localhost:8080/alive"]
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 3
+          resources:
+            requests: { cpu: 100m, memory: 160Mi }
+            limits: { cpu: 500m, memory: 400Mi }
+---
+# Headless: the DNS name lists every ready replica, so callers can spread their gRPC calls over them.
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-service
+spec:
+  clusterIP: None
+  selector:
+    app: orders-service
+  ports:
+    - name: grpc
+      port: 8080
+      targetPort: grpc

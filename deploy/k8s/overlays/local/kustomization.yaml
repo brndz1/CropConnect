@@ -1,0 +1,32 @@
+# Docker Desktop's Kubernetes: the images built by `docker compose build` and the development secrets of
+# compose.yaml. The gateway answers on http://localhost:5000, as with Compose (port 80 is often taken on Windows).
+#   docker compose --profile simulation build
+#   kubectl apply -k deploy/k8s/overlays/local
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cropconnect
+resources:
+  - ../../base
+secretGenerator:
+  - name: cropconnect-secrets
+    literals:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+      - JWT_SECRET=SuperSecretKeyForDevelopmentOnly12345!
+      - INTERNAL_API_KEY=dev-internal-api-key-change-me-0123456789
+      - ADMIN_USERNAME=admin
+      - ADMIN_EMAIL=admin@cropconnect.test
+      - ADMIN_PASSWORD=DevAdmin-ChangeMe-123
+patches:
+  - target: { kind: Service, name: api-gateway }
+    patch: |
+      - op: replace
+        path: /spec/ports/0/port
+        value: 5000
+  - target: { kind: Deployment, name: sensor-simulator }
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/env/4/value
+        value: http://api-gateway:5000

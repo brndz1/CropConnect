@@ -1,0 +1,58 @@
+# Horizontal scaling: more replicas when the average CPU passes 70 % of the request (100m), back to one when idle.
+# The stateless gateway and the services on the busiest paths (catalog, orders, sensor readings) scale; the
+# background workers stay safe with several replicas (advisory locks, competing RabbitMQ consumers).
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-gateway
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: api-gateway }
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: farms-service
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: farms-service }
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: orders-service
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: orders-service }
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: sensors-service
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: sensors-service }
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }
