@@ -15,7 +15,7 @@ $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $Overlay = Join-Path $RepoRoot "deploy\k8s\overlays\azure"
 $Images = @(
     "auth-service", "users-service", "farms-service", "orders-service",
-    "sensors-service", "notifications-service", "api-gateway", "sensor-simulator"
+    "sensors-service", "notifications-service", "api-gateway", "sensor-simulator", "web"
 )
 
 $ErrorActionPreference = "Stop"

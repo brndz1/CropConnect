@@ -33,7 +33,7 @@ spec:
               valueFrom:
                 secretKeyRef: { name: cropconnect-secrets, key: RABBITMQ_PASSWORD }
             - name: GATEWAY_URL
-              value: http://api-gateway
+              value: http://api-gateway:8080
           readinessProbe:
             httpGet: { path: /, port: http }
             periodSeconds: 15

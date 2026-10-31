@@ -26,6 +26,8 @@ images:
     newName: cropconnect16641.azurecr.io/api-gateway
   - name: cropconnect/sensor-simulator
     newName: cropconnect16641.azurecr.io/sensor-simulator
+  - name: cropconnect/web
+    newName: cropconnect16641.azurecr.io/web
 patches:
   # Every deploy pushes new "latest" images, so the nodes must check the registry on each pod start.
   - target: { kind: Deployment }

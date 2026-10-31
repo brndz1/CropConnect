@@ -49,5 +49,5 @@ Invoke-Checked { kubectl apply -k $Overlay }
 Invoke-Checked { kubectl -n cropconnect rollout restart deployment }
 Invoke-Checked { kubectl -n cropconnect rollout status deployment --timeout=10m }
 
-$ip = kubectl -n cropconnect get service api-gateway --output jsonpath="{.status.loadBalancer.ingress[0].ip}"
-Write-Host "CropConnect is running: http://$ip/api/farms"
+$ip = kubectl -n cropconnect get service web --output jsonpath="{.status.loadBalancer.ingress[0].ip}"
+Write-Host "CropConnect is running: http://$ip (API at http://$ip/api)"
