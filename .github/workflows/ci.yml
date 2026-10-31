@@ -40,6 +40,33 @@ jobs:
           printf 'POSTGRES_USER=ci\n' > deploy/k8s/overlays/azure/secrets.env
           kubectl kustomize deploy/k8s/overlays/azure > /dev/null
 
+  web:
+    name: Web app
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install the dependencies
+        run: npm ci
+
+      - name: Check the formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check and build
+        run: npm run build
+
   end-to-end:
     name: End-to-end tests
     runs-on: ubuntu-latest
