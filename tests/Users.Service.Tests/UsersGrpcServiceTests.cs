@@ -112,6 +112,20 @@ public sealed class UsersGrpcServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task The_gateway_creates_the_profile_at_registration_but_cannot_read_or_change_it()
+    {
+        var created = await CreateAsync(_anaId, TestServerCallContext.Internal());
+        Assert.Equal(_anaId.ToString(), created.Id);
+
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
+            Service().GetUserProfile(new GetUserProfileRequest { Id = _anaId.ToString() }, TestServerCallContext.Internal()));
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
+            Service().UpdateUserProfile(
+                new UpdateUserProfileRequest { Id = _anaId.ToString(), FirstName = "X", LastName = "Y", PhoneNumber = "" },
+                TestServerCallContext.Internal()));
+    }
+
+    [Fact]
     public void Names_are_required_and_capped()
     {
         Assert.Throws<InvalidInputException>(() => ProfileInput.Name("   ", "First name"));

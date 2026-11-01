@@ -1,4 +1,7 @@
 using Auth.Service.Protos;
+using Grpc.Core;
+using Microsoft.Extensions.Options;
+using Users.Service.Protos;
 using CropConnect.ApiGateway.Infrastructure;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -9,7 +12,7 @@ public static class AuthEndpoints
 {
     #region Contracts
 
-    public sealed record RegisterBody(string Username, string Email, string Password, string Role);
+    public sealed record RegisterBody(string Username, string Email, string Password, string Role, string FirstName, string LastName);
 
     public sealed record RegisteredResponse(string UserId);
 
@@ -39,14 +42,41 @@ public static class AuthEndpoints
     {
         var auth = routes.MapGroup("/api/auth").WithTags("Auth").AllowAnonymous();
 
-        auth.MapPost("/register", async Task<Created<RegisteredResponse>> (RegisterBody body, AuthService.AuthServiceClient client, CancellationToken ct) =>
+        auth.MapPost("/register", async Task<Results<Created<RegisteredResponse>, ValidationProblem>> (
+                RegisterBody body,
+                AuthService.AuthServiceClient client,
+                UsersService.UsersServiceClient users,
+                IOptions<DownstreamOptions> downstream,
+                ILogger<RegisterBody> logger,
+                CancellationToken ct) =>
             {
+                // Checked first, so an account is never created without the profile it needs.
+                var names = new Dictionary<string, string[]>();
+                if (!ValidName(body.FirstName)) names["firstName"] = [$"First name is required and must have at most {NameMaxLength} characters."];
+                if (!ValidName(body.LastName)) names["lastName"] = [$"Last name is required and must have at most {NameMaxLength} characters."];
+                if (names.Count > 0) return TypedResults.ValidationProblem(names);
+
                 var response = await client.RegisterAsync(
                     new RegisterRequest { Username = body.Username ?? "", Email = body.Email ?? "", Password = body.Password ?? "", Role = body.Role ?? "" },
                     cancellationToken: ct);
+
+                // The user cannot log in before confirming the email, so the gateway creates the profile for them.
+                // If Users.Service is down the account still exists and the names can be filled in on the profile page.
+                try
+                {
+                    await users.CreateUserProfileAsync(
+                        new CreateUserProfileRequest { Id = response.UserId, FirstName = body.FirstName!.Trim(), LastName = body.LastName!.Trim(), PhoneNumber = "" },
+                        new Metadata { { "x-api-key", downstream.Value.ApiKey } },
+                        cancellationToken: ct);
+                }
+                catch (RpcException exception)
+                {
+                    logger.LogWarning(exception, "The profile of new user {UserId} was not created", response.UserId);
+                }
+
                 return TypedResults.Created($"/api/users/{response.UserId}", new RegisteredResponse(response.UserId));
             })
-            .WithSummary("Register as a client or farm manager (RF01, RF02)");
+            .WithSummary("Register as a client or farm manager, with first and last name (RF01, RF02)");
 
         auth.MapPost("/login", async Task<Ok<TokenResponse>> (LoginBody body, AuthService.AuthServiceClient client, CancellationToken ct) =>
             {
@@ -143,6 +173,10 @@ public static class AuthEndpoints
 
         return routes;
     }
+
+    private const int NameMaxLength = 100;
+
+    private static bool ValidName(string? name) => name?.Trim() is { Length: > 0 and <= NameMaxLength };
 
     private static UserAccountResponse ToResponse(UserAccountInfo user) =>
         new(user.Id, user.Username, user.Email, user.Role, user.IsActive, user.EmailVerified);

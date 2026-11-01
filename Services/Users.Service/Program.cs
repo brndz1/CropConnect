@@ -1,8 +1,11 @@
 using System.Text;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Users.Service.Data;
+using Users.Service.Security;
 using Users.Service.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,8 +38,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30)
         };
-    });
-builder.Services.AddAuthorization();
+    })
+    // The gateway creates the first profile right after registration, before the user can log in.
+    .AddScheme<AuthenticationSchemeOptions, InternalApiKeyAuthenticationHandler>(InternalApiKeyAuthenticationHandler.SchemeName, _ => { });
+
+builder.Services.AddOptions<InternalApiOptions>()
+    .BindConfiguration(InternalApiOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddAuthorizationBuilder()
+    .SetDefaultPolicy(new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme, InternalApiKeyAuthenticationHandler.SchemeName)
+        .RequireAuthenticatedUser()
+        .Build());
 
 var app = builder.Build();
 

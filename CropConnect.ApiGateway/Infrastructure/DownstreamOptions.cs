@@ -31,6 +31,12 @@ public sealed class DownstreamOptions
     [Url]
     public string Notifications { get; set; } = "http://localhost:5005";
 
+    // The internal API key (x-api-key), for the calls the gateway makes on its own behalf: creating the
+    // profile of a user who has just registered and cannot log in yet.
+    [Required]
+    [MinLength(32)]
+    public string ApiKey { get; set; } = string.Empty;
+
     [Range(typeof(TimeSpan), "00:00:01", "00:05:00")]
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(15);
 }

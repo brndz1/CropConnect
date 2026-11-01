@@ -17,7 +17,8 @@ public sealed class AccountTests
     {
         var email = NewEmail("verify");
         var username = email.Split('@')[0];
-        Assert.Equal(HttpStatusCode.Created, (await PostAsync("api/auth/register", new { username, email, password = Password, role = "Client" })).Status);
+        var registered = await PostAsync("api/auth/register", new { username, email, password = Password, role = "Client", firstName = "Marta", lastName = "Ferreira" });
+        Assert.Equal(HttpStatusCode.Created, registered.Status);
 
         var early = await PostAsync("api/auth/login", new { email, password = Password });
         Assert.Equal(HttpStatusCode.Forbidden, early.Status);
@@ -27,8 +28,14 @@ public sealed class AccountTests
         Assert.Equal(HttpStatusCode.NoContent, (await PostAsync("api/auth/verify-email", new { token })).Status);
         Assert.Equal(HttpStatusCode.BadRequest, (await PostAsync("api/auth/verify-email", new { token })).Status);
 
-        Assert.NotEmpty(await LoginAsync(email, Password));
+        var token2 = await LoginAsync(email, Password);
         await Mailpit.ArrivesAsync(email, "Your email is confirmed");
+
+        // The names given at registration are already in the profile.
+        var profile = await GetAsync($"api/users/{registered.Text("userId")}/profile", token2);
+        Assert.Equal(HttpStatusCode.OK, profile.Status);
+        Assert.Equal("Marta", profile.Text("firstName"));
+        Assert.Equal("Ferreira", profile.Text("lastName"));
     }
 
     [Fact]
@@ -50,6 +57,16 @@ public sealed class AccountTests
             response => response.Status == HttpStatusCode.Unauthorized,
             because: "the old token to stop working (the gateway caches the check for 15 s)");
         await Mailpit.ArrivesAsync(user.Email, "Your password was changed");
+    }
+
+    [Fact]
+    public async Task Registration_needs_the_first_and_last_name()
+    {
+        var email = NewEmail("noname");
+        var refused = await PostAsync("api/auth/register", new { username = email.Split('@')[0], email, password = Password, role = "Client", firstName = " ", lastName = "" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, refused.Status);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await PostAsync("api/auth/login", new { email, password = Password })).Status);
     }
 
     [Fact]

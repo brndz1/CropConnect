@@ -5,6 +5,7 @@ using Npgsql;
 using Users.Service.Data;
 using Users.Service.Models;
 using Users.Service.Protos;
+using Users.Service.Security;
 
 namespace Users.Service.Services;
 
@@ -33,7 +34,7 @@ public class UsersGrpcService : Protos.UsersService.UsersServiceBase
     public override async Task<UserProfileResponse> CreateUserProfile(CreateUserProfileRequest request, ServerCallContext context)
     {
         var userId = ProfileInput.Id(request.Id);
-        EnsureCanAccess(context, userId);
+        EnsureCanAccess(context, userId, allowInternal: true);
 
         var profile = new UserProfile
         {
@@ -85,9 +86,21 @@ public class UsersGrpcService : Protos.UsersService.UsersServiceBase
     }
 
     // A profile belongs to the account with the same ID, so only that user or an administrator may use it.
-    private static void EnsureCanAccess(ServerCallContext context, Guid userId)
+    // The gateway (internal API key) may only create it, with the names given at registration.
+    private static void EnsureCanAccess(ServerCallContext context, Guid userId, bool allowInternal = false)
     {
         var user = context.GetHttpContext().User;
+
+        if (user.Identity?.AuthenticationType == InternalApiKeyAuthenticationHandler.SchemeName)
+        {
+            if (allowInternal)
+            {
+                return;
+            }
+
+            throw new ForbiddenException("You can only access your own profile.");
+        }
+
         var isOwner = Guid.TryParse(user.FindFirst("sub")?.Value, out var callerId) && callerId == userId;
 
         if (!isOwner && !user.HasClaim("role", "Admin"))
