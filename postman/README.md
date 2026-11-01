@@ -8,7 +8,7 @@ because notifications arrive asynchronously through RabbitMQ.
 
 | Folder | What it checks |
 |---|---|
-| 00 Preparação | Registration, login of the three roles, duplicate registration and wrong password |
+| 00 Preparação | Registration that waits for email confirmation (login 403, resend, invalid links), password recovery that reveals no accounts, the administrator creating a manager and a client (already verified), login of the three roles, duplicate registration and wrong password |
 | 01 Segurança e perfis de acesso | 401 without or with a tampered token, 403 for the wrong role |
 | 02 Gestão do catálogo | Farm, pickup schedule, product and surprise basket; public catalog |
 | 03 Encomenda e levantamento | Stock reservation, insufficient stock, status transitions, notifications, review |

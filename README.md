@@ -73,8 +73,11 @@ are also published on their own ports, on `127.0.0.1` only:
 - Every service exports its logs, distributed traces and metrics over OTLP to the standalone Aspire
   dashboard, as under Aspire. It has no login, so Compose only publishes it on `127.0.0.1`.
 - Data is kept in the `postgres-data` and `rabbitmq-data` volumes; `docker compose down -v` removes it.
-- Notification emails are caught by Mailpit. To send them through Mailtrap instead, set `EMAIL_PROVIDER=Mailtrap`
-  and `MAILTRAP_API_TOKEN` (plus `MAILTRAP_SANDBOX_INBOX_ID` to use a sandbox inbox) in `.env`.
+- Emails are caught by Mailpit: the notifications and the account emails (email verification, password reset,
+  invitation, welcome, password changed, account deactivated or reactivated), whose links open the web app. To
+  deliver them for real, set in `.env` `EMAIL_PROVIDER=Smtp` with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`,
+  `SMTP_PASSWORD` and a verified `EMAIL_FROM_ADDRESS` (e.g. Brevo's relay), or `EMAIL_PROVIDER=Mailtrap` with
+  `MAILTRAP_API_TOKEN`. Self-registered users log in only after opening the link in the verification email.
 - The farm sensors are simulated by Node-RED, which only starts with the `simulation` profile so the tests
   never see its random alerts: `docker compose --profile simulation up -d --build`. See
   [Simulation/node-red](Simulation/node-red/README.md).

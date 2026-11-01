@@ -115,6 +115,18 @@ az login
 `deploy.ps1` generates `k8s/overlays/azure/secrets.env` with random passwords on the first run; it holds the
 administrator's password and is never committed.
 
+On Azure the emails are delivered for real through an SMTP relay (Brevo's, set in the overlay). Add its login,
+key and a sender verified in the provider's account to `secrets.env` before deploying:
+
+```text
+SMTP_USERNAME=...
+SMTP_PASSWORD=...
+EMAIL_FROM_ADDRESS=...
+```
+
+Addresses on reserved test domains (`*.test`, `example.com`), such as the ones the tests and the Postman
+collection create, are not sent there, so they never bounce.
+
 The platform answers at `https://cropconnect.belgiumcentral.cloudapp.azure.com`, a DNS label Azure puts on the
 load balancer's public IP (set by an annotation in [`caddy.yaml`](k8s/overlays/azure/caddy.yaml) and `$DnsLabel` in
 `settings.ps1`). Caddy, the only public Service on Azure, gets a free Let's Encrypt certificate for that name,
