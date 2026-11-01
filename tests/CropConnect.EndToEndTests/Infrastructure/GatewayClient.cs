@@ -61,6 +61,10 @@ public sealed class GatewayClient
         var registered = await PostAsync("api/auth/register", new { username = name, email, password = "Passw0rd-e2e", role });
         Assert.True(registered.Status == HttpStatusCode.Created, $"Register {role}: {(int)registered.Status} {registered.Body}");
 
+        // Like a real user: open the link in the verification email before logging in.
+        var verified = await PostAsync("api/auth/verify-email", new { token = await Mailpit.TokenAsync(email, "Confirm your email address") });
+        Assert.True(verified.Status == HttpStatusCode.NoContent, $"Verify {email}: {(int)verified.Status} {verified.Body}");
+
         return new TestUser(registered.Text("userId"), email, await LoginAsync(email, "Passw0rd-e2e"));
     }
 

@@ -25,7 +25,9 @@ data:
   Downstream__Sensors: http://sensors-service.cropconnect.svc.cluster.local:8080
   Downstream__Notifications: http://notifications-service.cropconnect.svc.cluster.local:8080
   Email__Provider: Mailpit
-  Email__FromAddress: notifications@cropconnect.test
+  Email__FromAddress: noreply@cropconnect.test
   Email__Mailpit__BaseUrl: http://mailpit.cropconnect.svc.cluster.local:8025/
+  # The web app the links in the emails open (the local LoadBalancer; the Azure overlay sets its own).
+  Email__AppBaseUrl: http://localhost/
   # The resolver logs a warning for every missing IPv6 (AAAA) record on each refresh.
   Logging__LogLevel__Microsoft.Extensions.ServiceDiscovery.Dns.Resolver: Error

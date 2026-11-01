@@ -5,6 +5,8 @@ using Auth.Service.Models;
 using Auth.Service.Security;
 using Microsoft.AspNetCore.Authentication;
 using Auth.Service.Services;
+using Auth.Service.Application;
+using Auth.Service.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +24,27 @@ if (string.IsNullOrWhiteSpace(builder.Configuration["JwtSettings:Secret"]))
 {
     throw new InvalidOperationException("JwtSettings:Secret is not configured.");
 }
+
+builder.Services.AddSingleton(TimeProvider.System);
+
+builder.Services.AddOptions<AccountOptions>()
+    .BindConfiguration(AccountOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddScoped<AccountTokenService>();
+
+// Account events (verification, password reset, ...) reach Notifications.Service through an outbox and RabbitMQ.
+builder.Services.AddOptions<RabbitMqOptions>()
+    .BindConfiguration(RabbitMqOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddSingleton<RabbitMqConnectionProvider>();
+builder.Services.AddOptions<OutboxOptions>()
+    .BindConfiguration(OutboxOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddHostedService<OutboxPublisher>();
+builder.Services.AddHealthChecks().AddCheck<RabbitMqHealthCheck>("rabbitmq");
 
 builder.Services.AddScoped<JwtTokenGenerator>();
 builder.Services.AddSingleton<JwtTokenValidator>();

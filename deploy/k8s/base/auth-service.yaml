@@ -19,7 +19,7 @@ spec:
         # No depends_on in Kubernetes: wait for the infrastructure instead of crash-looping until it is up.
         - name: wait-for-infrastructure
           image: busybox:1.37
-          command: ["sh", "-c", "until nc -z postgres 5432; do echo waiting; sleep 2; done"]
+          command: ["sh", "-c", "until nc -z postgres 5432 && nc -z rabbitmq 5672; do echo waiting; sleep 2; done"]
           securityContext:
             runAsUser: 1000
       containers:
@@ -48,6 +48,12 @@ spec:
               value: Host=postgres;Database=auth_db;Username=$(POSTGRES_USER);Password=$(POSTGRES_PASSWORD)
             - name: JwtSettings__ExpirationMinutes
               value: "60"
+            - name: RabbitMq__UserName
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: RABBITMQ_USER }
+            - name: RabbitMq__Password
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: RABBITMQ_PASSWORD }
             - name: InternalApi__ApiKey
               valueFrom:
                 secretKeyRef: { name: cropconnect-secrets, key: INTERNAL_API_KEY }
