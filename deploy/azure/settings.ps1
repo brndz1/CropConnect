@@ -4,6 +4,9 @@ $ResourceGroup = "cropconnect-rg"
 $Location = "belgiumcentral"
 $Cluster = "cropconnect-aks"
 $Registry = "cropconnect16641"
+# DNS label of the public IP; must match the annotation in deploy/k8s/overlays/azure.
+$DnsLabel = "cropconnect"
+$PublicUrl = "https://$DnsLabel.$Location.cloudapp.azure.com"
 # 2 vCPU, 8 GB: the whole platform fits on one node; the autoscaler adds a second one under load.
 $NodeSize = "Standard_D2as_v4"
 $MinNodes = 1

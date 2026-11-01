@@ -1,5 +1,6 @@
 using CropConnect.ApiGateway.Endpoints;
 using CropConnect.ApiGateway.Infrastructure;
+using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
 
 #region Services
@@ -20,12 +21,22 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
     .AllowAnyHeader()
     .AllowAnyMethod()));
 
+// The gateway is only reached through the web app's nginx (and Caddy on Azure), which says whether the client
+// used HTTPS; the OpenAPI document needs it to give Scalar an https:// server address.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 #endregion
 
 #region Pipeline
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors();

@@ -1,0 +1,83 @@
+# The public entry point on Azure: Caddy gets a free Let's Encrypt certificate for the DNS name, renews it,
+# redirects HTTP to HTTPS and forwards everything to the web app's nginx.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: caddy
+data:
+  Caddyfile: |
+    cropconnect.belgiumcentral.cloudapp.azure.com {
+        encode gzip
+        header Strict-Transport-Security "max-age=31536000"
+        reverse_proxy web:80
+    }
+---
+# A StatefulSet for its disk: the certificate survives restarts, so Let's Encrypt is not asked again each time.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: caddy
+spec:
+  serviceName: caddy
+  replicas: 1
+  selector:
+    matchLabels:
+      app: caddy
+  template:
+    metadata:
+      labels:
+        app: caddy
+    spec:
+      containers:
+        - name: caddy
+          image: caddy:2-alpine
+          ports:
+            - name: http
+              containerPort: 80
+            - name: https
+              containerPort: 443
+          readinessProbe:
+            tcpSocket: { port: https }
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: { port: https }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { memory: 128Mi }
+          volumeMounts:
+            - name: config
+              mountPath: /etc/caddy
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: config
+          configMap: { name: caddy }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+---
+# The public IP, with the DNS name Let's Encrypt validates over port 80.
+apiVersion: v1
+kind: Service
+metadata:
+  name: caddy
+  annotations:
+    service.beta.kubernetes.io/azure-dns-label-name: cropconnect
+spec:
+  type: LoadBalancer
+  selector:
+    app: caddy
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+    - name: https
+      port: 443
+      targetPort: https
