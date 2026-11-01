@@ -1,10 +1,11 @@
-# Azure Kubernetes Service: images from the Azure Container Registry and the secrets of secrets.env, which
-# deploy/azure/deploy.ps1 generates with random values and is never committed.
+# Azure Kubernetes Service: images from the Azure Container Registry, the secrets of secrets.env, which
+# deploy/azure/deploy.ps1 generates with random values and is never committed, and Caddy for HTTPS.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: cropconnect
 resources:
   - ../../base
+  - caddy.yaml
 secretGenerator:
   - name: cropconnect-secrets
     envs:
@@ -29,14 +30,12 @@ images:
   - name: cropconnect/web
     newName: cropconnect16641.azurecr.io/web
 patches:
-  # A DNS name on the public IP: http://cropconnect.belgiumcentral.cloudapp.azure.com. It follows the IP if Azure
-  # gives the load balancer a new one.
+  # Caddy is the public entry point (HTTPS), so the web app stays inside the cluster.
   - target: { kind: Service, name: web }
     patch: |
-      - op: add
-        path: /metadata/annotations
-        value:
-          service.beta.kubernetes.io/azure-dns-label-name: cropconnect
+      - op: replace
+        path: /spec/type
+        value: ClusterIP
   # Every deploy pushes new "latest" images, so the nodes must check the registry on each pod start.
   - target: { kind: Deployment }
     patch: |
