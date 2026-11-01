@@ -28,10 +28,11 @@ public sealed class MailtrapEmailSender : IEmailSender
             to = new[] { new { email = message.ToAddress, name = message.ToName } },
             subject = message.Subject,
             text = message.Text,
+            html = message.Html,
             category = "CropConnect notification"
         };
 
-        using var response = await _httpClient.PostAsJsonAsync(path, request, cancellationToken);
+        using var response = await _httpClient.PostAsJsonAsync(path, request, EmailJson.Options, cancellationToken);
         await response.EnsureAcceptedAsync("Mailtrap", cancellationToken);
     }
 }

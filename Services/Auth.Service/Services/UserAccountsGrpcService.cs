@@ -1,4 +1,6 @@
+using Auth.Service.Application;
 using Auth.Service.Data;
+using Auth.Service.Messaging;
 using Auth.Service.Models;
 using Auth.Service.Protos;
 using Grpc.Core;
@@ -18,11 +20,13 @@ public class UserAccountsGrpcService : Protos.UserAccountsService.UserAccountsSe
     private const int MaxPageSize = 100;
 
     private readonly AuthDbContext _dbContext;
+    private readonly AccountTokenService _tokens;
     private readonly ILogger<UserAccountsGrpcService> _logger;
 
-    public UserAccountsGrpcService(AuthDbContext dbContext, ILogger<UserAccountsGrpcService> logger)
+    public UserAccountsGrpcService(AuthDbContext dbContext, AccountTokenService tokens, ILogger<UserAccountsGrpcService> logger)
     {
         _dbContext = dbContext;
+        _tokens = tokens;
         _logger = logger;
     }
 
@@ -37,12 +41,21 @@ public class UserAccountsGrpcService : Protos.UserAccountsService.UserAccountsSe
             Username = UserInput.Username(request.Username),
             Email = UserInput.Email(request.Email),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(UserInput.Password(request.Password)),
-            Role = UserInput.Role(request.Role)
+            Role = UserInput.Role(request.Role),
+            // The administrator vouches for the address; the invitation tells the user and lets them choose a password.
+            EmailVerifiedAt = _tokens.Now
         };
 
         await EnsureUniqueAsync(user.Username, user.Email, exceptUserId: null, context.CancellationToken);
 
         _dbContext.Users.Add(user);
+        await _tokens.IssueAsync(
+            user,
+            AccountTokenPurpose.PasswordReset,
+            _tokens.Options.InvitationLifetime,
+            MessagingTopology.InvitedRoutingKey,
+            respectCooldown: false,
+            context.CancellationToken);
         await SaveChangesAsync(context.CancellationToken);
 
         _logger.LogInformation("User {UserId} created with role {Role} by admin {AdminId}.", user.Id, user.Role, adminId);
@@ -119,6 +132,12 @@ public class UserAccountsGrpcService : Protos.UserAccountsService.UserAccountsSe
 
         await EnsureUniqueAsync(username, email, user.Id, context.CancellationToken);
 
+        // An address the administrator sets counts as verified, like on creation.
+        if (email != user.Email)
+        {
+            user.EmailVerifiedAt = _tokens.Now;
+        }
+
         user.Username = username;
         user.Email = email;
         user.Role = role;
@@ -139,7 +158,16 @@ public class UserAccountsGrpcService : Protos.UserAccountsService.UserAccountsSe
             throw new BusinessRuleException("Administrators cannot deactivate their own account.");
         }
 
-        user.IsActive = request.IsActive;
+        if (user.IsActive != request.IsActive)
+        {
+            user.IsActive = request.IsActive;
+            AccountEvents.AddEvent(
+                _dbContext,
+                user.IsActive ? MessagingTopology.ReactivatedRoutingKey : MessagingTopology.DeactivatedRoutingKey,
+                user,
+                _tokens.Now);
+        }
+
         await SaveChangesAsync(context.CancellationToken);
 
         _logger.LogInformation("User {UserId} set to IsActive={IsActive} by admin {AdminId}.", user.Id, user.IsActive, adminId);
@@ -198,6 +226,7 @@ public class UserAccountsGrpcService : Protos.UserAccountsService.UserAccountsSe
         Username = user.Username,
         Email = user.Email,
         Role = user.Role.ToString(),
-        IsActive = user.IsActive
+        IsActive = user.IsActive,
+        EmailVerified = user.IsEmailVerified
     };
 }

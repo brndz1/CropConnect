@@ -11,6 +11,8 @@ public class NotificationsDbContext : DbContext
 
     public DbSet<Notification> Notifications => Set<Notification>();
 
+    public DbSet<AccountEmail> AccountEmails => Set<AccountEmail>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

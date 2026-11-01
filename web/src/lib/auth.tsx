@@ -15,6 +15,8 @@ export interface Session {
 interface AuthContextValue {
   session: Session | null
   login: (email: string, password: string) => Promise<Session>
+  // Replaces the token, e.g. with the one returned after changing the password.
+  applyToken: (token: string) => void
   logout: () => void
 }
 
@@ -50,14 +52,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear()
   }, [queryClient])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const { token } = await api.post<{ token: string }>("/api/auth/login", { email, password })
+  const applyToken = useCallback((token: string) => {
     const next = decode(token)
     if (!next) throw new Error("A sessão recebida não é válida.")
     tokenStore.set(token)
     setSession(next)
     return next
   }, [])
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const { token } = await api.post<{ token: string }>("/api/auth/login", { email, password })
+      return applyToken(token)
+    },
+    [applyToken],
+  )
 
   // The session ends when the token expires or the gateway refuses it (RNF06).
   useEffect(() => {
@@ -74,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [session, logout])
 
-  const value = useMemo(() => ({ session, login, logout }), [session, login, logout])
+  const value = useMemo(() => ({ session, login, applyToken, logout }), [session, login, applyToken, logout])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 

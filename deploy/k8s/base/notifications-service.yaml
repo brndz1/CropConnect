@@ -58,6 +58,16 @@ spec:
             - name: AuthService__ApiKey
               valueFrom:
                 secretKeyRef: { name: cropconnect-secrets, key: INTERNAL_API_KEY }
+            # Real email delivery (Azure): the SMTP login and the verified sender are secrets; locally they are absent.
+            - name: Email__Smtp__UserName
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: SMTP_USERNAME, optional: true }
+            - name: Email__Smtp__Password
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: SMTP_PASSWORD, optional: true }
+            - name: Email__FromAddress
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: EMAIL_FROM_ADDRESS, optional: true }
           # Kestrel speaks only HTTP/2 (gRPC), so the probes use curl with prior knowledge instead of httpGet.
           readinessProbe:
             exec:

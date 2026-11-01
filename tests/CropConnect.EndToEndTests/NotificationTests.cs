@@ -87,10 +87,10 @@ public sealed class NotificationTests
             n => n?["emailStatus"]?.ToString() == "Sent",
             because: "the email to be sent");
 
+        // The manager's other emails are the account ones (verification, welcome).
         var emails = await Mailpit.MessagesToAsync(setup.Manager.Email);
-        var email = Assert.Single(emails);
-        Assert.Equal(notification!["title"]!.ToString(), email["Subject"]!.ToString());
-        Assert.Contains(notification["message"]!.ToString(), await Mailpit.TextAsync(email));
+        var email = Assert.Single(emails, e => e["Subject"]!.ToString() == notification!["title"]!.ToString());
+        Assert.Contains(notification!["message"]!.ToString(), await Mailpit.TextAsync(email));
     }
 
     [Fact]

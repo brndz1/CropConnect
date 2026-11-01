@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace CropConnect.ApiGateway.Endpoints;
 
-// RF01-RF03: registration, login and the administrator's user management (Auth.Service).
+// RF01-RF03: registration, login, the account emails' links and the administrator's user management (Auth.Service).
 public static class AuthEndpoints
 {
     #region Contracts
@@ -17,7 +17,15 @@ public static class AuthEndpoints
 
     public sealed record TokenResponse(string Token);
 
-    public sealed record UserAccountResponse(string Id, string Username, string Email, string Role, bool IsActive);
+    public sealed record UserAccountResponse(string Id, string Username, string Email, string Role, bool IsActive, bool EmailVerified);
+
+    public sealed record TokenBody(string Token);
+
+    public sealed record EmailBody(string Email);
+
+    public sealed record ResetPasswordBody(string Token, string NewPassword);
+
+    public sealed record ChangePasswordBody(string CurrentPassword, string NewPassword);
 
     public sealed record CreateUserBody(string Username, string Email, string Password, string Role);
 
@@ -46,6 +54,48 @@ public static class AuthEndpoints
                 return TypedResults.Ok(new TokenResponse(response.Token));
             })
             .WithSummary("Log in and get a JWT for the other endpoints (RF01)");
+
+        auth.MapPost("/verify-email", async Task<NoContent> (TokenBody body, AuthService.AuthServiceClient client, CancellationToken ct) =>
+            {
+                await client.VerifyEmailAsync(new TokenRequest { Token = body.Token ?? "" }, cancellationToken: ct);
+                return TypedResults.NoContent();
+            })
+            .WithSummary("Confirm the email address with the token from the verification email");
+
+        // 202 whether or not the email has an account, so these two cannot be used to find out who is registered.
+        auth.MapPost("/resend-verification", async Task<Accepted> (EmailBody body, AuthService.AuthServiceClient client, CancellationToken ct) =>
+            {
+                await client.ResendVerificationAsync(new EmailRequest { Email = body.Email ?? "" }, cancellationToken: ct);
+                return TypedResults.Accepted((string?)null);
+            })
+            .WithSummary("Send the verification email again (at most once a minute)");
+
+        auth.MapPost("/forgot-password", async Task<Accepted> (EmailBody body, AuthService.AuthServiceClient client, CancellationToken ct) =>
+            {
+                await client.RequestPasswordResetAsync(new EmailRequest { Email = body.Email ?? "" }, cancellationToken: ct);
+                return TypedResults.Accepted((string?)null);
+            })
+            .WithSummary("Email a link to choose a new password (valid for 1 hour)");
+
+        auth.MapPost("/reset-password", async Task<NoContent> (ResetPasswordBody body, AuthService.AuthServiceClient client, CancellationToken ct) =>
+            {
+                await client.ResetPasswordAsync(
+                    new ResetPasswordRequest { Token = body.Token ?? "", NewPassword = body.NewPassword ?? "" },
+                    cancellationToken: ct);
+                return TypedResults.NoContent();
+            })
+            .WithSummary("Choose a new password with the token from the reset or invitation email");
+
+        routes.MapPost("/api/auth/change-password", async Task<Ok<TokenResponse>> (ChangePasswordBody body, AuthService.AuthServiceClient client, CancellationToken ct) =>
+            {
+                var response = await client.ChangePasswordAsync(
+                    new ChangePasswordRequest { CurrentPassword = body.CurrentPassword ?? "", NewPassword = body.NewPassword ?? "" },
+                    cancellationToken: ct);
+                return TypedResults.Ok(new TokenResponse(response.Token));
+            })
+            .WithTags("Auth")
+            .RequireAuthorization()
+            .WithSummary("Change your own password; returns a new token, as the old ones stop working");
 
         var users = routes.MapGroup("/api/users").WithTags("Users").RequireAuthorization();
 
@@ -95,5 +145,5 @@ public static class AuthEndpoints
     }
 
     private static UserAccountResponse ToResponse(UserAccountInfo user) =>
-        new(user.Id, user.Username, user.Email, user.Role, user.IsActive);
+        new(user.Id, user.Username, user.Email, user.Role, user.IsActive, user.EmailVerified);
 }

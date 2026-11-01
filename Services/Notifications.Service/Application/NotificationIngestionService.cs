@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Notifications.Service.Application.Clients;
+using Notifications.Service.Application.Email;
 using Notifications.Service.Application.Events;
 using Notifications.Service.Data;
 using Notifications.Service.Messaging;
@@ -26,17 +28,20 @@ public sealed class NotificationIngestionService : INotificationIngestionService
     private readonly NotificationsDbContext _dbContext;
     private readonly IFarmDirectoryClient _farms;
     private readonly TimeProvider _timeProvider;
+    private readonly EmailOptions _email;
     private readonly ILogger<NotificationIngestionService> _logger;
 
     public NotificationIngestionService(
         NotificationsDbContext dbContext,
         IFarmDirectoryClient farms,
         TimeProvider timeProvider,
+        IOptions<EmailOptions> email,
         ILogger<NotificationIngestionService> logger)
     {
         _dbContext = dbContext;
         _farms = farms;
         _timeProvider = timeProvider;
+        _email = email.Value;
         _logger = logger;
     }
 
@@ -47,6 +52,11 @@ public sealed class NotificationIngestionService : INotificationIngestionService
     public async Task<bool> HandleAsync(string routingKey, Guid eventId, ReadOnlyMemory<byte> body, CancellationToken cancellationToken)
     {
         Guard.NotEmpty(eventId, "Event ID");
+
+        if (routingKey.StartsWith(AccountEventPrefix, StringComparison.Ordinal))
+        {
+            return await HandleAccountEventAsync(routingKey, eventId, body, cancellationToken);
+        }
 
         var draft = routingKey switch
         {
@@ -101,6 +111,68 @@ public sealed class NotificationIngestionService : INotificationIngestionService
         {
             throw new InvalidInputException($"The event body is not valid JSON: {exception.Message}");
         }
+    }
+
+    #endregion
+
+    #region Accounts
+
+    private const string AccountEventPrefix = "account.";
+
+    // Account emails go out by email only: they are not notifications in the app's inbox.
+    private async Task<bool> HandleAccountEventAsync(string routingKey, Guid eventId, ReadOnlyMemory<byte> body, CancellationToken cancellationToken)
+    {
+        var appBaseUrl = _email.AppBaseUri;
+        var (userId, email, name, draft) = routingKey switch
+        {
+            MessagingTopology.EmailVerificationRequestedRoutingKey => WithToken(body, m => AccountEmailComposer.EmailVerification(m, appBaseUrl)),
+            MessagingTopology.PasswordResetRequestedRoutingKey => WithToken(body, m => AccountEmailComposer.PasswordReset(m, appBaseUrl)),
+            MessagingTopology.InvitedRoutingKey => WithToken(body, m => AccountEmailComposer.Invitation(m, appBaseUrl)),
+            MessagingTopology.EmailVerifiedRoutingKey => Informative(body, m => AccountEmailComposer.Welcome(m, appBaseUrl)),
+            MessagingTopology.PasswordChangedRoutingKey => Informative(body, m => AccountEmailComposer.PasswordChanged(m, appBaseUrl)),
+            MessagingTopology.DeactivatedRoutingKey => Informative(body, AccountEmailComposer.Deactivated),
+            MessagingTopology.ReactivatedRoutingKey => Informative(body, m => AccountEmailComposer.Reactivated(m, appBaseUrl)),
+            _ => throw new InvalidInputException($"Unsupported event '{routingKey}'.")
+        };
+
+        if (await _dbContext.AccountEmails.AnyAsync(e => e.SourceEventId == eventId, cancellationToken))
+        {
+            return false;
+        }
+
+        _dbContext.AccountEmails.Add(AccountEmail.Create(
+            eventId,
+            userId,
+            draft.Kind,
+            email,
+            name,
+            draft.Subject,
+            draft.Text,
+            draft.LinkExpiresAt,
+            _timeProvider.GetUtcNow().UtcDateTime,
+            MessagingTelemetry.CurrentTraceParent()));
+
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateException exception) when (exception.IsUniqueViolation())
+        {
+            return false;
+        }
+    }
+
+    private static (Guid, string, string, AccountEmailDraft) WithToken(ReadOnlyMemory<byte> body, Func<AccountTokenMessage, AccountEmailDraft> compose)
+    {
+        var message = Parse<AccountTokenMessage>(body);
+        return (message.UserId, message.Email, message.Username, compose(message));
+    }
+
+    private static (Guid, string, string, AccountEmailDraft) Informative(ReadOnlyMemory<byte> body, Func<AccountMessage, AccountEmailDraft> compose)
+    {
+        var message = Parse<AccountMessage>(body);
+        return (message.UserId, message.Email, message.Username, compose(message));
     }
 
     #endregion

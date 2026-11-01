@@ -4,10 +4,38 @@ option csharp_namespace = "Auth.Service.Protos";
 
 package auth;
 
+import "google/protobuf/empty.proto";
+
 service AuthService {
   rpc Register (RegisterRequest) returns (RegisterResponse);
   rpc Login (LoginRequest) returns (LoginResponse);
   rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+
+  // Account emails: the links in them carry a one-time token.
+  rpc VerifyEmail (TokenRequest) returns (google.protobuf.Empty);
+  rpc ResendVerification (EmailRequest) returns (google.protobuf.Empty);
+  rpc RequestPasswordReset (EmailRequest) returns (google.protobuf.Empty);
+  rpc ResetPassword (ResetPasswordRequest) returns (google.protobuf.Empty);
+  // The logged-in user (JWT); returns a new token, since the old ones stop being valid.
+  rpc ChangePassword (ChangePasswordRequest) returns (LoginResponse);
+}
+
+message TokenRequest {
+  string token = 1;
+}
+
+message EmailRequest {
+  string email = 1;
+}
+
+message ResetPasswordRequest {
+  string token = 1;
+  string new_password = 2;
+}
+
+message ChangePasswordRequest {
+  string current_password = 1;
+  string new_password = 2;
 }
 
 message RegisterRequest {
@@ -72,6 +100,7 @@ message UserAccountInfo {
   string email = 3;
   string role = 4;
   bool is_active = 5;
+  bool email_verified = 6;
 }
 
 message CreateUserRequest {

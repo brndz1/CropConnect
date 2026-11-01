@@ -98,6 +98,75 @@ function ProfileForm({ userId, profile }: { userId: string; profile: Profile | n
   )
 }
 
+// The old password is asked again; the API returns a new token because the current one stops working.
+function ChangePasswordForm() {
+  const { applyToken } = useAuth()
+  const [current, setCurrent] = useState("")
+  const [next, setNext] = useState("")
+  const [confirm, setConfirm] = useState("")
+  const change = useMutation({
+    mutationFn: () =>
+      api.post<{ token: string }>("/api/auth/change-password", { currentPassword: current, newPassword: next }),
+    onSuccess: ({ token }) => {
+      applyToken(token)
+      setCurrent("")
+      setNext("")
+      setConfirm("")
+      toast.success("Palavra-passe alterada. Enviámos-lhe um email a confirmar.")
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  })
+
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    if (next.length < 8) return toast.error("A nova palavra-passe tem de ter pelo menos 8 caracteres.")
+    if (next !== confirm) return toast.error("As palavras-passe não coincidem.")
+    change.mutate()
+  }
+
+  return (
+    <form onSubmit={submit} className="grid gap-4 rounded-xl border p-4" noValidate>
+      <h2 className="font-heading text-lg font-semibold text-brand-900">Alterar palavra-passe</h2>
+      <div className="grid gap-2">
+        <Label htmlFor="current-password">Palavra-passe atual</Label>
+        <Input
+          id="current-password"
+          type="password"
+          autoComplete="current-password"
+          value={current}
+          onChange={(e) => setCurrent(e.target.value)}
+        />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <Label htmlFor="new-password">Nova palavra-passe</Label>
+          <Input
+            id="new-password"
+            type="password"
+            autoComplete="new-password"
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="confirm-password">Repetir nova palavra-passe</Label>
+          <Input
+            id="confirm-password"
+            type="password"
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+          />
+        </div>
+      </div>
+      <Button type="submit" className="w-fit" disabled={change.isPending || !current || !next || !confirm}>
+        {change.isPending && <Loader2 className="animate-spin" />}
+        Alterar palavra-passe
+      </Button>
+    </form>
+  )
+}
+
 export function ProfilePage() {
   const { session, logout } = useAuth()
   const navigate = useNavigate()
@@ -138,6 +207,8 @@ export function ProfilePage() {
         </div>
 
         <ProfileForm userId={userId} profile={profile.data ?? null} />
+
+        <ChangePasswordForm />
 
         <Button
           variant="outline"

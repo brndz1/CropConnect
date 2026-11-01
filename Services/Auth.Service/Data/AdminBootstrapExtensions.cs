@@ -33,7 +33,8 @@ public static class AdminBootstrapExtensions
             Username = UserInput.Username(section["Username"] ?? "admin"),
             Email = UserInput.Email(email),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(UserInput.Password(password)),
-            Role = Role.Admin
+            Role = Role.Admin,
+            EmailVerifiedAt = DateTime.UtcNow
         };
 
         dbContext.Users.Add(admin);

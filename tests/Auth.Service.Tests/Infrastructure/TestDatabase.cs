@@ -43,3 +43,13 @@ public static class TestJwt
 
     public static JwtTokenValidator Validator(string secret = Secret) => new(Settings(secret));
 }
+
+// A clock the tests move forward, e.g. past a link's expiry or the resend cooldown.
+public sealed class TestClock : TimeProvider
+{
+    private DateTimeOffset _now = DateTimeOffset.UtcNow;
+
+    public override DateTimeOffset GetUtcNow() => _now;
+
+    public void Advance(TimeSpan by) => _now += by;
+}

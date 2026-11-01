@@ -16,6 +16,15 @@ public static class MessagingTopology
     // Sensors -> Notifications (RF21).
     public const string SensorAlertRaisedRoutingKey = "sensor.alert.raised";
 
+    // Auth -> Notifications: the account emails.
+    public const string EmailVerificationRequestedRoutingKey = "account.email-verification.requested";
+    public const string PasswordResetRequestedRoutingKey = "account.password-reset.requested";
+    public const string InvitedRoutingKey = "account.invited";
+    public const string EmailVerifiedRoutingKey = "account.email.verified";
+    public const string PasswordChangedRoutingKey = "account.password.changed";
+    public const string DeactivatedRoutingKey = "account.deactivated";
+    public const string ReactivatedRoutingKey = "account.reactivated";
+
     public const string EventsQueue = "notifications-service.events";
 
     // Events that can never be turned into a notification (malformed, unsupported) end up here.
@@ -27,7 +36,14 @@ public static class MessagingTopology
         OrderCreatedRoutingKey,
         OrderStatusChangedRoutingKey,
         OrderCancelledRoutingKey,
-        SensorAlertRaisedRoutingKey
+        SensorAlertRaisedRoutingKey,
+        EmailVerificationRequestedRoutingKey,
+        PasswordResetRequestedRoutingKey,
+        InvitedRoutingKey,
+        EmailVerifiedRoutingKey,
+        PasswordChangedRoutingKey,
+        DeactivatedRoutingKey,
+        ReactivatedRoutingKey
     ];
 
     public static async Task DeclareAsync(IChannel channel, CancellationToken cancellationToken)

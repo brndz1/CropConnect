@@ -1,6 +1,6 @@
 namespace Notifications.Service.Application.Events;
 
-// The JSON contracts published on cropconnect.events by Orders and Sensors (camelCase, enums as camelCase strings).
+// The JSON contracts published on cropconnect.events by Orders, Sensors and Auth (camelCase, enums as camelCase strings).
 // Enum values are kept as strings so a new status in a producer doesn't break deserialization here.
 
 public sealed record OrderCreatedMessage(
@@ -43,4 +43,22 @@ public sealed record SensorAlertRaisedMessage(
     string Unit,
     string Description,
     string? WeatherContext,
+    DateTime OccurredAt);
+
+// Auth: an email with a one-time link (verification, password reset, invitation).
+public sealed record AccountTokenMessage(
+    Guid UserId,
+    string Email,
+    string Username,
+    string Role,
+    string Token,
+    DateTime ExpiresAt,
+    DateTime OccurredAt);
+
+// Auth: an email that only informs (welcome, password changed, account deactivated or reactivated).
+public sealed record AccountMessage(
+    Guid UserId,
+    string Email,
+    string Username,
+    string Role,
     DateTime OccurredAt);

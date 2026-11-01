@@ -16,3 +16,12 @@ internal static class HttpResponseExtensions
             response.StatusCode);
     }
 }
+
+// The web defaults PostAsJsonAsync uses, without the null fields (no HTML part, no sandbox).
+internal static class EmailJson
+{
+    public static readonly System.Text.Json.JsonSerializerOptions Options = new(System.Text.Json.JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    };
+}

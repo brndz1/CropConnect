@@ -33,7 +33,8 @@ var mailpit = builder.AddContainer("mailpit", "axllent/mailpit", "v1.27")
 
 var auth = builder.AddProject<Projects.Auth_Service>("auth-service")
     .WithReference(authDb)
-    .WaitFor(authDb);
+    .WaitFor(authDb)
+    .WithRabbitMq(rabbitmq, rabbitUser, rabbitPassword);
 
 var users = builder.AddProject<Projects.Users_Service>("users-service")
     .WithReference(usersDb)

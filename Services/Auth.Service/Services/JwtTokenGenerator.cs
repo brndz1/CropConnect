@@ -32,6 +32,8 @@ public class JwtTokenGenerator
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            // Issued-at: ValidateToken rejects tokens issued before the last password change.
+            new Claim(JwtRegisteredClaimNames.Iat, EpochTime.GetIntDate(DateTime.UtcNow).ToString(), ClaimValueTypes.Integer64),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(RoleClaim, user.Role.ToString())
         };

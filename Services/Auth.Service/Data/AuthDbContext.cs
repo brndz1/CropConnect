@@ -11,6 +11,10 @@ public class AuthDbContext : DbContext
 
     public DbSet<User> Users { get; set; }
 
+    public DbSet<AccountToken> AccountTokens => Set<AccountToken>();
+
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -35,5 +39,28 @@ public class AuthDbContext : DbContext
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Username)
             .IsUnique();
+
+        modelBuilder.Entity<AccountToken>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.Purpose).HasConversion<string>().HasMaxLength(FieldLimits.TokenPurposeMaxLength);
+            entity.Property(t => t.TokenHash).HasMaxLength(FieldLimits.TokenHashLength).IsFixedLength().IsRequired();
+            entity.HasIndex(t => t.TokenHash).IsUnique();
+            entity.HasIndex(t => new { t.UserId, t.Purpose });
+            entity.HasOne<User>().WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<OutboxMessage>(entity =>
+        {
+            entity.HasKey(m => m.Id);
+            entity.Property(m => m.EventType).HasMaxLength(FieldLimits.EventTypeMaxLength).IsRequired();
+            entity.Property(m => m.RoutingKey).HasMaxLength(FieldLimits.RoutingKeyMaxLength).IsRequired();
+            entity.Property(m => m.Payload).HasColumnType("jsonb").IsRequired();
+            entity.Property(m => m.LastError).HasMaxLength(FieldLimits.OutboxErrorMaxLength);
+            entity.Property(m => m.TraceParent).HasMaxLength(FieldLimits.TraceParentMaxLength);
+
+            // The publisher only ever scans the pending messages, oldest first.
+            entity.HasIndex(m => m.OccurredAt).HasFilter("\"PublishedAt\" IS NULL");
+        });
     }
 }

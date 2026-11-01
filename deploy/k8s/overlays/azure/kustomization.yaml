@@ -30,6 +30,24 @@ images:
   - name: cropconnect/web
     newName: cropconnect16641.azurecr.io/web
 patches:
+  # Real email delivery through Brevo's SMTP relay; the login, key and sender come from secrets.env.
+  - target: { kind: ConfigMap, name: cropconnect-config }
+    patch: |
+      - op: add
+        path: /data/Email__Provider
+        value: Smtp
+      - op: add
+        path: /data/Email__Smtp__Host
+        value: smtp-relay.brevo.com
+      - op: add
+        path: /data/Email__Smtp__Port
+        value: "587"
+      - op: add
+        path: /data/Email__AppBaseUrl
+        value: https://cropconnect.belgiumcentral.cloudapp.azure.com/
+      - op: add
+        path: /data/Email__SkipReservedDomains
+        value: "true"
   # Caddy is the public entry point (HTTPS), so the web app stays inside the cluster.
   - target: { kind: Service, name: web }
     patch: |

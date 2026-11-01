@@ -1,3 +1,6 @@
+using System.Text.Json;
+using Auth.Service.Application;
+using Auth.Service.Data;
 using Auth.Service.Models;
 using Auth.Service.Protos;
 using Auth.Service.Services;
@@ -6,34 +9,66 @@ using CropConnect.Tests.Shared;
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace Auth.Service.Tests;
 
-public sealed class AuthGrpcServiceTests : IDisposable
+public sealed partial class AuthGrpcServiceTests : IDisposable
 {
     private const string Password = "Passw0rd-unit";
 
     private readonly TestDatabase _database = new();
+    private readonly TestClock _clock = new();
+    private readonly AccountOptions _accountOptions = new();
 
     public void Dispose() => _database.Dispose();
 
-    private AuthGrpcService Auth() => new(
-        _database.CreateContext(), TestJwt.Generator(), TestJwt.Validator(), NullLogger<AuthGrpcService>.Instance);
+    private AccountTokenService Tokens(AuthDbContext context) => new(context, _clock, Options.Create(_accountOptions));
 
-    private UserAccountsGrpcService Accounts() => new(_database.CreateContext(), NullLogger<UserAccountsGrpcService>.Instance);
+    private AuthGrpcService Auth()
+    {
+        var context = _database.CreateContext();
+        return new(context, TestJwt.Generator(), TestJwt.Validator(), Tokens(context), NullLogger<AuthGrpcService>.Instance);
+    }
 
-    private async Task<Guid> RegisterAsync(string username, string role = "Client", string? email = null)
+    private UserAccountsGrpcService Accounts()
+    {
+        var context = _database.CreateContext();
+        return new(context, Tokens(context), NullLogger<UserAccountsGrpcService>.Instance);
+    }
+
+    // Registers and, unless told not to, opens the link of the verification email, like a real user.
+    private async Task<Guid> RegisterAsync(string username, string role = "Client", string? email = null, bool verify = true)
     {
         var response = await Auth().Register(
             new RegisterRequest { Username = username, Email = email ?? $"{username}@cropconnect.test", Password = Password, Role = role },
             TestServerCallContext.Anonymous());
 
+        if (verify)
+        {
+            await Auth().VerifyEmail(new TokenRequest { Token = await LastTokenAsync("account.email-verification.requested") }, TestServerCallContext.Anonymous());
+        }
+
         return Guid.Parse(response.UserId);
+    }
+
+    // The one-time token of the newest event with this routing key, as Notifications.Service would read it.
+    private async Task<string> LastTokenAsync(string routingKey)
+    {
+        await using var context = _database.CreateContext();
+        var payload = context.OutboxMessages.Where(m => m.RoutingKey == routingKey).AsEnumerable().OrderBy(m => m.OccurredAt).Last().Payload;
+        return JsonDocument.Parse(payload).RootElement.GetProperty("token").GetString()!;
+    }
+
+    private async Task<string[]> RoutingKeysAsync()
+    {
+        await using var context = _database.CreateContext();
+        return context.OutboxMessages.AsEnumerable().OrderBy(m => m.OccurredAt).Select(m => m.RoutingKey).ToArray();
     }
 
     private async Task<Guid> SeedAdminAsync()
     {
-        var admin = new User { Id = Guid.NewGuid(), Username = "admin", Email = "admin@cropconnect.test", PasswordHash = BCrypt.Net.BCrypt.HashPassword(Password), Role = Role.Admin };
+        var admin = new User { Id = Guid.NewGuid(), Username = "admin", Email = "admin@cropconnect.test", PasswordHash = BCrypt.Net.BCrypt.HashPassword(Password), Role = Role.Admin, EmailVerifiedAt = DateTime.UtcNow };
         await using var context = _database.CreateContext();
         context.Users.Add(admin);
         await context.SaveChangesAsync();
