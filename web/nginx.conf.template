@@ -1,3 +1,9 @@
+# The scheme the client used: the one a proxy in front reports (Caddy on Azure), or nginx's own.
+map $http_x_forwarded_proto $forwarded_proto {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+}
+
 server {
     listen 8080;
     server_name _;
@@ -13,7 +19,7 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
         proxy_read_timeout 30s;
     }
 
@@ -25,6 +31,7 @@ server {
     location ~ ^/(openapi|scalar)/ {
         proxy_pass ${GATEWAY_URL};
         proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
     }
 
     # The web server itself, for the container and Kubernetes probes.
