@@ -29,6 +29,14 @@ images:
   - name: cropconnect/web
     newName: cropconnect16641.azurecr.io/web
 patches:
+  # A DNS name on the public IP: http://cropconnect.belgiumcentral.cloudapp.azure.com. It follows the IP if Azure
+  # gives the load balancer a new one.
+  - target: { kind: Service, name: web }
+    patch: |
+      - op: add
+        path: /metadata/annotations
+        value:
+          service.beta.kubernetes.io/azure-dns-label-name: cropconnect
   # Every deploy pushes new "latest" images, so the nodes must check the registry on each pod start.
   - target: { kind: Deployment }
     patch: |

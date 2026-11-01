@@ -115,6 +115,9 @@ az login
 `deploy.ps1` generates `k8s/overlays/azure/secrets.env` with random passwords on the first run; it holds the
 administrator's password and is never committed.
 
+The web app answers at `http://cropconnect.belgiumcentral.cloudapp.azure.com`, a DNS label Azure puts on the
+load balancer's public IP (set by an annotation in the Azure overlay and `$DnsLabel` in `settings.ps1`).
+
 ### Costs
 
 The environment is sized for a student subscription:
