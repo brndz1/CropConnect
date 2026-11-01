@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { api, ApiError, errorMessage } from "@/lib/api"
+import { passwordError } from "@/lib/passwords"
 import { AuthLayout } from "./auth-layout"
 
 const linkClass = "font-semibold text-primary underline-offset-4 hover:underline"
@@ -148,7 +149,7 @@ export function ResetPasswordPage() {
       setError(
         e instanceof ApiError && e.status === 400 && e.message.includes("link")
           ? "Este link é inválido ou expirou. Peça um novo."
-          : errorMessage(e),
+          : passwordError(e),
       )
     } finally {
       setBusy(false)

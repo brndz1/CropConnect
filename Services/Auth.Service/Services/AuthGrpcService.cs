@@ -229,6 +229,9 @@ public class AuthGrpcService : Protos.AuthService.AuthServiceBase
         var password = UserInput.Password(request.NewPassword);
         var (_, user) = await _tokens.RedeemAsync(request.Token, AccountTokenPurpose.PasswordReset, context.CancellationToken);
 
+        // Nothing is saved when it fails, so the link still works for another try.
+        EnsureNewPassword(user, password);
+
         SetPassword(user, password);
 
         // Opening a link sent to the address proves it belongs to the user.
