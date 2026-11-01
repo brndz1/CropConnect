@@ -26,6 +26,7 @@ export function RegisterPage() {
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirm, setConfirm] = useState("")
   const [consent, setConsent] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
@@ -47,6 +48,7 @@ export function RegisterPage() {
     if (username.trim().length < 3) next.username = "O nome de utilizador tem de ter pelo menos 3 caracteres."
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) next.email = "Introduza um email válido."
     if (password.length < 8) next.password = "A palavra-passe tem de ter pelo menos 8 caracteres."
+    else if (confirm !== password) next.confirm = "As palavras-passe não coincidem."
     if (!consent) next.consent = "Tem de aceitar o tratamento dos dados para criar a conta."
     setErrors(next)
     return Object.keys(next).length === 0
@@ -135,6 +137,18 @@ export function RegisterPage() {
           />
           <p className="text-sm text-muted-foreground">Pelo menos 8 caracteres.</p>
           <FieldError message={errors.password} />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="confirm">Confirmar palavra-passe</Label>
+          <Input
+            id="confirm"
+            type="password"
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            aria-invalid={!!errors.confirm}
+          />
+          <FieldError message={errors.confirm} />
         </div>
 
         {/* RGPD consent (RNF10). */}
