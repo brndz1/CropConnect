@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { api, ApiError, errorMessage } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
+import { passwordError } from "@/lib/passwords"
 import { roleLabel } from "@/lib/format"
 import type { Profile, UserAccount } from "@/lib/types"
 
@@ -114,12 +115,13 @@ function ChangePasswordForm() {
       setConfirm("")
       toast.success("Palavra-passe alterada. Enviámos-lhe um email a confirmar.")
     },
-    onError: (e) => toast.error(errorMessage(e)),
+    onError: (e) => toast.error(passwordError(e)),
   })
 
   function submit(event: FormEvent) {
     event.preventDefault()
     if (next.length < 8) return toast.error("A nova palavra-passe tem de ter pelo menos 8 caracteres.")
+    if (next === current) return toast.error("A nova palavra-passe tem de ser diferente da atual.")
     if (next !== confirm) return toast.error("As palavras-passe não coincidem.")
     change.mutate()
   }

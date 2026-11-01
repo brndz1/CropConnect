@@ -173,6 +173,18 @@ public sealed partial class AuthGrpcServiceTests
         Assert.Equal("account.password.changed", (await RoutingKeysAsync()).Last());
     }
 
+    [Fact]
+    public async Task Changing_to_the_current_password_is_refused()
+    {
+        var anaId = await RegisterAsync("ana");
+
+        var refused = await Assert.ThrowsAsync<InvalidInputException>(() =>
+            Auth().ChangePassword(new ChangePasswordRequest { CurrentPassword = Password, NewPassword = Password }, TestServerCallContext.For(anaId, "Client")));
+
+        Assert.Equal(AuthGrpcService.SamePasswordMessage, refused.Message);
+        Assert.DoesNotContain("account.password.changed", await RoutingKeysAsync());
+    }
+
     #endregion
 
     #region Administrator

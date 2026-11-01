@@ -17,6 +17,8 @@ public class AuthGrpcService : Protos.AuthService.AuthServiceBase
     public const string EmailNotVerifiedMessage =
         "Confirm your email address before logging in. Open the link we sent you or request a new one.";
 
+    public const string SamePasswordMessage = "The new password must be different from the current one.";
+
     private static readonly Empty Done = new();
 
     private readonly AuthDbContext _dbContext;
@@ -256,11 +258,22 @@ public class AuthGrpcService : Protos.AuthService.AuthServiceBase
             throw new InvalidInputException("The current password is not correct.");
         }
 
-        SetPassword(user, UserInput.Password(request.NewPassword));
+        var password = UserInput.Password(request.NewPassword);
+        EnsureNewPassword(user, password);
+
+        SetPassword(user, password);
         await _dbContext.SaveChangesAsync(context.CancellationToken);
 
         _logger.LogInformation("User {UserId} changed their password.", user.Id);
         return new LoginResponse { Token = _jwtTokenGenerator.GenerateToken(user) };
+    }
+
+    private static void EnsureNewPassword(User user, string password)
+    {
+        if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+        {
+            throw new InvalidInputException(SamePasswordMessage);
+        }
     }
 
     private void SetPassword(User user, string password)
