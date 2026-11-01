@@ -17,6 +17,10 @@ public sealed class TestServerCallContext : ServerCallContext
 
     public static TestServerCallContext Anonymous() => new(new ClaimsPrincipal(new ClaimsIdentity()));
 
+    // A service calling with the internal API key (the scheme name is what the services check).
+    public static TestServerCallContext Internal() =>
+        new(new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, "internal-service")], "InternalApiKey")));
+
     public static TestServerCallContext For(Guid userId, string role) =>
         new(new ClaimsPrincipal(new ClaimsIdentity([new Claim("sub", userId.ToString()), new Claim("role", role)], "Test")));
 

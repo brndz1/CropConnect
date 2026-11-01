@@ -58,7 +58,7 @@ public sealed class GatewayClient
         var name = $"e2e{role}{Guid.NewGuid():N}"[..24].ToLowerInvariant();
         var email = $"{name}@e2e.test";
 
-        var registered = await PostAsync("api/auth/register", new { username = name, email, password = "Passw0rd-e2e", role });
+        var registered = await PostAsync("api/auth/register", new { username = name, email, password = "Passw0rd-e2e", role, firstName = "Teste", lastName = role });
         Assert.True(registered.Status == HttpStatusCode.Created, $"Register {role}: {(int)registered.Status} {registered.Body}");
 
         // Like a real user: open the link in the verification email before logging in.

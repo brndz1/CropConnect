@@ -123,6 +123,19 @@ public sealed partial class AuthGrpcServiceTests
     }
 
     [Fact]
+    public async Task Resetting_to_the_old_password_is_refused_and_keeps_the_link()
+    {
+        await RegisterAsync("ana");
+        await RequestResetAsync("ana@cropconnect.test");
+        var link = await LastTokenAsync("account.password-reset.requested");
+
+        var refused = await Assert.ThrowsAsync<InvalidInputException>(() => ResetAsync(link, Password));
+
+        Assert.Equal(AuthGrpcService.SamePasswordMessage, refused.Message);
+        await ResetAsync(link);
+    }
+
+    [Fact]
     public async Task Reset_links_expire_after_an_hour()
     {
         await RegisterAsync("ana");
@@ -171,6 +184,18 @@ public sealed partial class AuthGrpcServiceTests
         Assert.True((await Auth().ValidateToken(new ValidateTokenRequest { Token = changed.Token }, TestServerCallContext.Anonymous())).IsValid);
         Assert.NotEmpty((await LoginAsync("ana@cropconnect.test", NewPassword)).Token);
         Assert.Equal("account.password.changed", (await RoutingKeysAsync()).Last());
+    }
+
+    [Fact]
+    public async Task Changing_to_the_current_password_is_refused()
+    {
+        var anaId = await RegisterAsync("ana");
+
+        var refused = await Assert.ThrowsAsync<InvalidInputException>(() =>
+            Auth().ChangePassword(new ChangePasswordRequest { CurrentPassword = Password, NewPassword = Password }, TestServerCallContext.For(anaId, "Client")));
+
+        Assert.Equal(AuthGrpcService.SamePasswordMessage, refused.Message);
+        Assert.DoesNotContain("account.password.changed", await RoutingKeysAsync());
     }
 
     #endregion

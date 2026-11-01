@@ -98,6 +98,7 @@ services:
       <<: [*jwt, *database, *telemetry]
       OTEL_SERVICE_NAME: users-service
       ConnectionStrings__UsersDb: Host=postgres;Database=users_db;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      InternalApi__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
     depends_on:
       postgres:
         condition: service_healthy
@@ -229,6 +230,7 @@ services:
     environment:
       <<: [*jwt, *telemetry]
       OTEL_SERVICE_NAME: api-gateway
+      Downstream__ApiKey: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me-0123456789}
       Downstream__Auth: http://auth-service:8080
       Downstream__Users: http://users-service:8080
       Downstream__Farms: http://farms-service:8080

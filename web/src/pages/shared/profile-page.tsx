@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Loader2, LogOut } from "lucide-react"
+import { Loader2, LogOut, Pencil } from "lucide-react"
 import { useState, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
@@ -10,16 +10,26 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { api, ApiError, errorMessage } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
+import { passwordError } from "@/lib/passwords"
 import { roleLabel } from "@/lib/format"
+import { cn } from "@/lib/utils"
 import type { Profile, UserAccount } from "@/lib/types"
 
+// Read-only until "Editar"; "Guardar" only works once something changed. Accounts without a profile yet
+// (created before registration asked for the names) start in edit mode.
 function ProfileForm({ userId, profile }: { userId: string; profile: Profile | null }) {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState({
+  const saved = {
     firstName: profile?.firstName ?? "",
     lastName: profile?.lastName ?? "",
     phoneNumber: profile?.phoneNumber ?? "",
-  })
+  }
+  const [form, setForm] = useState(saved)
+  const [editing, setEditing] = useState(!profile)
+  const changed =
+    form.firstName.trim() !== saved.firstName ||
+    form.lastName.trim() !== saved.lastName ||
+    form.phoneNumber.trim() !== saved.phoneNumber
 
   const save = useMutation({
     mutationFn: () => {
@@ -32,8 +42,10 @@ function ProfileForm({ userId, profile }: { userId: string; profile: Profile | n
         ? api.put<Profile>(`/api/users/${userId}/profile`, body)
         : api.post<Profile>(`/api/users/${userId}/profile`, body)
     },
-    onSuccess: (saved) => {
-      queryClient.setQueryData(["profile", userId], saved)
+    onSuccess: (next) => {
+      queryClient.setQueryData(["profile", userId], next)
+      setForm({ firstName: next.firstName, lastName: next.lastName, phoneNumber: next.phoneNumber })
+      setEditing(false)
       toast.success("Dados guardados.")
     },
     onError: (e) => toast.error(errorMessage(e)),
@@ -41,6 +53,7 @@ function ProfileForm({ userId, profile }: { userId: string; profile: Profile | n
 
   function submit(event: FormEvent) {
     event.preventDefault()
+    if (!changed) return
     if (form.phoneNumber && !/^\+?[0-9 ]{6,19}$/.test(form.phoneNumber.trim())) {
       toast.error("O número de telefone não é válido.")
       return
@@ -48,9 +61,23 @@ function ProfileForm({ userId, profile }: { userId: string; profile: Profile | n
     save.mutate()
   }
 
+  function cancel() {
+    setForm(saved)
+    setEditing(false)
+  }
+
+  const canSave = editing && changed && !save.isPending && !!form.firstName.trim() && !!form.lastName.trim()
+
   return (
     <form onSubmit={submit} className="grid gap-4 rounded-xl border p-4 sm:p-6">
-      <h2 className="text-lg font-semibold">Dados pessoais</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold">Dados pessoais</h2>
+        {!editing && (
+          <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)}>
+            <Pencil /> Editar
+          </Button>
+        )}
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="firstName">Nome</Label>
@@ -60,6 +87,8 @@ function ProfileForm({ userId, profile }: { userId: string; profile: Profile | n
             maxLength={100}
             value={form.firstName}
             onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+            readOnly={!editing}
+            className={cn(!editing && "bg-muted text-muted-foreground")}
             required
           />
         </div>
@@ -71,6 +100,8 @@ function ProfileForm({ userId, profile }: { userId: string; profile: Profile | n
             maxLength={100}
             value={form.lastName}
             onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+            readOnly={!editing}
+            className={cn(!editing && "bg-muted text-muted-foreground")}
             required
           />
         </div>
@@ -81,19 +112,30 @@ function ProfileForm({ userId, profile }: { userId: string; profile: Profile | n
           id="phone"
           type="tel"
           autoComplete="tel"
-          placeholder="+351 912 345 678"
+          placeholder={editing ? "+351 912 345 678" : undefined}
           value={form.phoneNumber}
           onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
+          readOnly={!editing}
+          className={cn(!editing && "bg-muted text-muted-foreground")}
         />
       </div>
-      <Button
-        type="submit"
-        className="w-fit"
-        disabled={save.isPending || !form.firstName.trim() || !form.lastName.trim()}
-      >
-        {save.isPending && <Loader2 className="animate-spin" />}
-        Guardar
-      </Button>
+      {editing && (
+        <div className="flex gap-2">
+          <Button
+            type="submit"
+            disabled={!canSave}
+            className={cn(!canSave && "bg-muted text-muted-foreground disabled:opacity-100")}
+          >
+            {save.isPending && <Loader2 className="animate-spin" />}
+            Guardar
+          </Button>
+          {profile && (
+            <Button type="button" variant="ghost" onClick={cancel} disabled={save.isPending}>
+              Cancelar
+            </Button>
+          )}
+        </div>
+      )}
     </form>
   )
 }
@@ -114,12 +156,13 @@ function ChangePasswordForm() {
       setConfirm("")
       toast.success("Palavra-passe alterada. Enviámos-lhe um email a confirmar.")
     },
-    onError: (e) => toast.error(errorMessage(e)),
+    onError: (e) => toast.error(passwordError(e)),
   })
 
   function submit(event: FormEvent) {
     event.preventDefault()
     if (next.length < 8) return toast.error("A nova palavra-passe tem de ter pelo menos 8 caracteres.")
+    if (next === current) return toast.error("A nova palavra-passe tem de ser diferente da atual.")
     if (next !== confirm) return toast.error("As palavras-passe não coincidem.")
     change.mutate()
   }

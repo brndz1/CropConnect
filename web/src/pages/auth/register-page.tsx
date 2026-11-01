@@ -23,9 +23,12 @@ const kinds: { value: Kind; title: string; description: string; icon: typeof Tra
 export function RegisterPage() {
   const { session } = useAuth()
   const [kind, setKind] = useState<Kind>("Client")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirm, setConfirm] = useState("")
   const [consent, setConsent] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
@@ -44,9 +47,12 @@ export function RegisterPage() {
 
   function validate() {
     const next: Record<string, string> = {}
+    if (!firstName.trim()) next.firstName = "Indique o nome."
+    if (!lastName.trim()) next.lastName = "Indique o apelido."
     if (username.trim().length < 3) next.username = "O nome de utilizador tem de ter pelo menos 3 caracteres."
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) next.email = "Introduza um email válido."
     if (password.length < 8) next.password = "A palavra-passe tem de ter pelo menos 8 caracteres."
+    else if (confirm !== password) next.confirm = "As palavras-passe não coincidem."
     if (!consent) next.consent = "Tem de aceitar o tratamento dos dados para criar a conta."
     setErrors(next)
     return Object.keys(next).length === 0
@@ -57,7 +63,14 @@ export function RegisterPage() {
     if (!validate()) return
     setBusy(true)
     try {
-      await api.post("/api/auth/register", { username: username.trim(), email: email.trim(), password, role: kind })
+      await api.post("/api/auth/register", {
+        username: username.trim(),
+        email: email.trim(),
+        password,
+        role: kind,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+      })
       toast.success("Conta criada. Confirme o email para entrar.")
       setRegistered(email.trim())
     } catch (e) {
@@ -100,6 +113,32 @@ export function RegisterPage() {
           })}
         </div>
 
+        <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-2">
+            <Label htmlFor="firstName">Nome</Label>
+            <Input
+              id="firstName"
+              autoComplete="given-name"
+              maxLength={100}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              aria-invalid={!!errors.firstName}
+            />
+            <FieldError message={errors.firstName} />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="lastName">Apelido</Label>
+            <Input
+              id="lastName"
+              autoComplete="family-name"
+              maxLength={100}
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              aria-invalid={!!errors.lastName}
+            />
+            <FieldError message={errors.lastName} />
+          </div>
+        </div>
         <div className="grid gap-2">
           <Label htmlFor="username">Nome de utilizador</Label>
           <Input
@@ -135,6 +174,18 @@ export function RegisterPage() {
           />
           <p className="text-sm text-muted-foreground">Pelo menos 8 caracteres.</p>
           <FieldError message={errors.password} />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="confirm">Confirmar palavra-passe</Label>
+          <Input
+            id="confirm"
+            type="password"
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            aria-invalid={!!errors.confirm}
+          />
+          <FieldError message={errors.confirm} />
         </div>
 
         {/* RGPD consent (RNF10). */}

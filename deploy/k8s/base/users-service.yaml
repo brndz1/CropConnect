@@ -46,6 +46,9 @@ spec:
                 secretKeyRef: { name: cropconnect-secrets, key: POSTGRES_PASSWORD }
             - name: ConnectionStrings__UsersDb
               value: Host=postgres;Database=users_db;Username=$(POSTGRES_USER);Password=$(POSTGRES_PASSWORD)
+            - name: InternalApi__ApiKey
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: INTERNAL_API_KEY }
           # Kestrel speaks only HTTP/2 (gRPC), so the probes use curl with prior knowledge instead of httpGet.
           readinessProbe:
             exec:

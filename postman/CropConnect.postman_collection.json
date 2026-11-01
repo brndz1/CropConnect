@@ -91,7 +91,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"pm-novo-{{runId}}\",\n  \"email\": \"pm-novo-{{runId}}@postman.test\",\n  \"password\": \"Passw0rd-postman\",\n  \"role\": \"Client\"\n}",
+              "raw": "{\n  \"username\": \"pm-novo-{{runId}}\",\n  \"email\": \"pm-novo-{{runId}}@postman.test\",\n  \"password\": \"Passw0rd-postman\",\n  \"role\": \"Client\",\n  \"firstName\": \"Marta\",\n  \"lastName\": \"Ferreira\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -138,7 +138,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"pm-novo-{{runId}}\",\n  \"email\": \"pm-novo-{{runId}}@postman.test\",\n  \"password\": \"Passw0rd-postman\",\n  \"role\": \"Client\"\n}",
+              "raw": "{\n  \"username\": \"pm-novo-{{runId}}\",\n  \"email\": \"pm-novo-{{runId}}@postman.test\",\n  \"password\": \"Passw0rd-postman\",\n  \"role\": \"Client\",\n  \"firstName\": \"Marta\",\n  \"lastName\": \"Ferreira\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

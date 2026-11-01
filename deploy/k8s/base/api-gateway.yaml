@@ -31,6 +31,10 @@ spec:
             - name: JwtSettings__Secret
               valueFrom:
                 secretKeyRef: { name: cropconnect-secrets, key: JWT_SECRET }
+            # Creates the profile of a newly registered user on Users.Service.
+            - name: Downstream__ApiKey
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: INTERNAL_API_KEY }
           readinessProbe:
             httpGet: { path: /health, port: http }
             periodSeconds: 10
