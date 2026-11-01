@@ -1,6 +1,6 @@
 import { Check, Loader2, ShoppingBasket, Tractor } from "lucide-react"
 import { useState, type FormEvent } from "react"
-import { Link, Navigate, useNavigate } from "react-router-dom"
+import { Link, Navigate } from "react-router-dom"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -10,6 +10,7 @@ import { api, ApiError, errorMessage } from "@/lib/api"
 import { homeFor, useAuth } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 import { FieldError } from "@/components/field-error"
+import { CheckInbox } from "./account-pages"
 import { AuthLayout } from "./auth-layout"
 
 type Kind = "Client" | "Manager"
@@ -20,8 +21,7 @@ const kinds: { value: Kind; title: string; description: string; icon: typeof Tra
 ]
 
 export function RegisterPage() {
-  const { session, login } = useAuth()
-  const navigate = useNavigate()
+  const { session } = useAuth()
   const [kind, setKind] = useState<Kind>("Client")
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
@@ -29,8 +29,18 @@ export function RegisterPage() {
   const [consent, setConsent] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
+  const [registered, setRegistered] = useState<string>()
 
   if (session) return <Navigate to={homeFor(session.role)} replace />
+
+  // The account works once the email is confirmed (link in the verification email).
+  if (registered) {
+    return (
+      <AuthLayout title="Confirme o seu email" description="Falta só um passo para ativar a conta.">
+        <CheckInbox email={registered} />
+      </AuthLayout>
+    )
+  }
 
   function validate() {
     const next: Record<string, string> = {}
@@ -48,9 +58,8 @@ export function RegisterPage() {
     setBusy(true)
     try {
       await api.post("/api/auth/register", { username: username.trim(), email: email.trim(), password, role: kind })
-      const next = await login(email.trim(), password)
-      toast.success("Conta criada. Bem-vindo à CropConnect!")
-      navigate(homeFor(next.role), { replace: true })
+      toast.success("Conta criada. Confirme o email para entrar.")
+      setRegistered(email.trim())
     } catch (e) {
       setErrors({
         form:

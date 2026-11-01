@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/app-shell"
 import { LoadingList } from "@/components/states"
 import { homeFor, useAuth } from "@/lib/auth"
 import type { Role } from "@/lib/types"
+import { ForgotPasswordPage, ResetPasswordPage, VerifyEmailPage } from "@/pages/auth/account-pages"
 import { LoginPage } from "@/pages/auth/login-page"
 import { RegisterPage } from "@/pages/auth/register-page"
 import { CartPage } from "@/pages/client/cart-page"
@@ -54,6 +55,10 @@ export default function App() {
       <Routes>
         <Route path="/entrar" element={<LoginPage />} />
         <Route path="/registar" element={<RegisterPage />} />
+        {/* The links in the account emails. */}
+        <Route path="/verificar-email" element={<VerifyEmailPage />} />
+        <Route path="/recuperar-palavra-passe" element={<ForgotPasswordPage />} />
+        <Route path="/redefinir-palavra-passe" element={<ResetPasswordPage />} />
         <Route element={<AppShell />}>
           <Route index element={<PublicHome />} />
           <Route path="explorar" element={<CatalogPage />} />

@@ -7,7 +7,12 @@ import { Label } from "@/components/ui/label"
 import { ApiError, errorMessage } from "@/lib/api"
 import { homeFor, useAuth } from "@/lib/auth"
 import { FieldError } from "@/components/field-error"
+import { ResendVerificationButton } from "./account-pages"
 import { AuthLayout } from "./auth-layout"
+
+// Auth answers 403 with this detail when the password is right but the email was never confirmed.
+const unverified = (e: unknown) =>
+  e instanceof ApiError && e.status === 403 && e.message.startsWith("Confirm your email")
 
 export function LoginPage() {
   const { session, login } = useAuth()
@@ -16,6 +21,7 @@ export function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string>()
+  const [needsVerification, setNeedsVerification] = useState(false)
   const [busy, setBusy] = useState(false)
 
   if (session) return <Navigate to={homeFor(session.role)} replace />
@@ -24,12 +30,20 @@ export function LoginPage() {
     event.preventDefault()
     setBusy(true)
     setError(undefined)
+    setNeedsVerification(false)
     try {
       const next = await login(email.trim(), password)
       const from = (location.state as { from?: string } | null)?.from
       navigate(from ?? homeFor(next.role), { replace: true })
     } catch (e) {
-      setError(e instanceof ApiError && e.status === 401 ? "Email ou palavra-passe incorretos." : errorMessage(e))
+      setNeedsVerification(unverified(e))
+      setError(
+        e instanceof ApiError && e.status === 401
+          ? "Email ou palavra-passe incorretos."
+          : unverified(e)
+            ? "Confirme o seu email antes de entrar: abra o link que lhe enviámos."
+            : errorMessage(e),
+      )
     } finally {
       setBusy(false)
     }
@@ -51,7 +65,15 @@ export function LoginPage() {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="password">Palavra-passe</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Palavra-passe</Label>
+            <Link
+              to="/recuperar-palavra-passe"
+              className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+            >
+              Esqueci-me da palavra-passe
+            </Link>
+          </div>
           <Input
             id="password"
             type="password"
@@ -67,6 +89,7 @@ export function LoginPage() {
           {busy && <Loader2 className="animate-spin" />}
           Entrar
         </Button>
+        {needsVerification && <ResendVerificationButton email={email} />}
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Ainda não tem conta?{" "}
