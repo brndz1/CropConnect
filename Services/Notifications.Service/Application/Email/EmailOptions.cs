@@ -8,7 +8,10 @@ public enum EmailProvider
     Mailpit = 1,
 
     // Mailtrap Email API: real delivery, or a Mailtrap sandbox inbox when SandboxInboxId is set.
-    Mailtrap = 2
+    Mailtrap = 2,
+
+    // Any SMTP server with a login, e.g. Brevo's relay (smtp-relay.brevo.com:587).
+    Smtp = 3
 }
 
 public sealed class EmailOptions
@@ -23,6 +26,17 @@ public sealed class EmailOptions
 
     [Required]
     public string FromName { get; set; } = "CropConnect";
+
+    // The web app the links in the account emails open.
+    [Required]
+    [Url]
+    public string AppBaseUrl { get; set; } = "http://localhost:3000/";
+
+    public Uri AppBaseUri => new(AppBaseUrl.EndsWith('/') ? AppBaseUrl : AppBaseUrl + "/");
+
+    // With a provider that delivers for real, addresses on reserved test domains (RFC 2606: *.test, example.com...)
+    // are not sent: they can never be delivered and would only hurt the sender's reputation.
+    public bool SkipReservedDomains { get; set; }
 
     public bool EnableDispatcher { get; set; } = true;
 
@@ -45,6 +59,8 @@ public sealed class EmailOptions
     public MailpitOptions Mailpit { get; set; } = new();
 
     public MailtrapOptions Mailtrap { get; set; } = new();
+
+    public SmtpOptions Smtp { get; set; } = new();
 }
 
 public sealed class MailpitOptions
@@ -59,4 +75,19 @@ public sealed class MailtrapOptions
 
     // Set to deliver into a Mailtrap sandbox inbox instead of real recipients.
     public long? SandboxInboxId { get; set; }
+}
+
+public sealed class SmtpOptions
+{
+    public string Host { get; set; } = string.Empty;
+
+    [Range(1, 65535)]
+    public int Port { get; set; } = 587;
+
+    public string UserName { get; set; } = string.Empty;
+
+    public string Password { get; set; } = string.Empty;
+
+    // STARTTLS on port 587; set to false only for a local server without TLS.
+    public bool UseStartTls { get; set; } = true;
 }

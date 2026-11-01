@@ -109,12 +109,19 @@ public static class DependencyInjection
             .Validate(
                 email => email.Provider != EmailProvider.Mailtrap || !string.IsNullOrWhiteSpace(email.Mailtrap.ApiToken),
                 "Email:Mailtrap:ApiToken is required when the email provider is Mailtrap.")
+            .Validate(
+                email => email.Provider != EmailProvider.Smtp || !string.IsNullOrWhiteSpace(email.Smtp.Host),
+                "Email:Smtp:Host is required when the email provider is Smtp.")
             .ValidateOnStart();
 
         // The provider is chosen once at startup; both senders are typed HTTP clients.
         var provider = configuration.GetSection(EmailOptions.SectionName).GetValue(nameof(EmailOptions.Provider), EmailProvider.Mailpit);
 
-        if (provider == EmailProvider.Mailtrap)
+        if (provider == EmailProvider.Smtp)
+        {
+            services.AddSingleton<IEmailSender, SmtpEmailSender>();
+        }
+        else if (provider == EmailProvider.Mailtrap)
         {
             services.AddHttpClient<IEmailSender, MailtrapEmailSender>((sp, client) =>
             {

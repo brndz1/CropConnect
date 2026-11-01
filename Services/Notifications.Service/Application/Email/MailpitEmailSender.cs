@@ -21,10 +21,11 @@ public sealed class MailpitEmailSender : IEmailSender
             From = new { Email = _options.FromAddress, Name = _options.FromName },
             To = new[] { new { Email = message.ToAddress, Name = message.ToName } },
             message.Subject,
-            message.Text
+            message.Text,
+            HTML = message.Html
         };
 
-        using var response = await _httpClient.PostAsJsonAsync("api/v1/send", request, cancellationToken);
+        using var response = await _httpClient.PostAsJsonAsync("api/v1/send", request, EmailJson.Options, cancellationToken);
         await response.EnsureAcceptedAsync("Mailpit", cancellationToken);
     }
 }

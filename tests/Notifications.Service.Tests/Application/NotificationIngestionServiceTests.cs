@@ -1,7 +1,9 @@
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Notifications.Service.Application;
 using Notifications.Service.Application.Clients;
+using Notifications.Service.Application.Email;
 using Notifications.Service.Models;
 using Notifications.Service.Tests.Infrastructure;
 
@@ -21,7 +23,7 @@ public sealed class NotificationIngestionServiceTests : IDisposable
     public void Dispose() => _database.Dispose();
 
     private NotificationIngestionService Service() =>
-        new(_database.CreateContext(), _farms, TimeProvider.System, NullLogger<NotificationIngestionService>.Instance);
+        new(_database.CreateContext(), _farms, TimeProvider.System, Options.Create(new EmailOptions()), NullLogger<NotificationIngestionService>.Instance);
 
     private Task<bool> HandleAsync(string routingKey, string json, Guid? eventId = null) =>
         Service().HandleAsync(routingKey, eventId ?? Guid.NewGuid(), Encoding.UTF8.GetBytes(json), CancellationToken.None);

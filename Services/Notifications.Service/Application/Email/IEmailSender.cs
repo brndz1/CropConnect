@@ -1,6 +1,7 @@
 namespace Notifications.Service.Application.Email;
 
-public sealed record EmailMessage(string ToAddress, string ToName, string Subject, string Text);
+// Html is the same content as Text, for the clients that show it; Text is always sent.
+public sealed record EmailMessage(string ToAddress, string ToName, string Subject, string Text, string? Html = null);
 
 public interface IEmailSender
 {
