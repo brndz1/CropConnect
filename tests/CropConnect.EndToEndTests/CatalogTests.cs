@@ -32,6 +32,18 @@ public sealed class CatalogTests
     }
 
     [Fact]
+    public async Task Farms_are_found_by_name_or_location()
+    {
+        var manager = await RegisterAsync("Manager");
+        var location = $"Aldeia {Guid.NewGuid():N}"[..20];
+        var farm = await PostAsync("api/farms", new { name = "Quinta da Pesquisa", description = "e2e", location }, manager.Token);
+
+        var byLocation = await GetAsync($"api/farms?search={Uri.EscapeDataString(location.ToUpperInvariant())}");
+
+        Assert.Equal(farm.Id, Assert.Single(byLocation.Body!["items"]!.AsArray())!["id"]!.ToString());
+    }
+
+    [Fact]
     public async Task Clients_cannot_register_farms()
     {
         var client = await RegisterAsync("Client");

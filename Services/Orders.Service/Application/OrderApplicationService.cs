@@ -162,16 +162,14 @@ public sealed class OrderApplicationService : IOrderApplicationService
             var managerId = caller.RequireUserId();
             orders = orders.Where(o => o.FarmOwnerId == managerId);
         }
-        else if (caller.IsAdmin)
-        {
-            if (query.FarmId.HasValue)
-            {
-                orders = orders.Where(o => o.FarmId == query.FarmId.Value);
-            }
-        }
-        else
+        else if (!caller.IsAdmin)
         {
             throw new ForbiddenException("Only managers and administrators can list farm orders.");
+        }
+
+        if (query.FarmId.HasValue)
+        {
+            orders = orders.Where(o => o.FarmId == query.FarmId.Value);
         }
 
         if (query.Status.HasValue)
@@ -251,13 +249,51 @@ public sealed class OrderApplicationService : IOrderApplicationService
                 order.MarkReadyForPickup(now);
                 break;
 
+            // The customer confirms it in front of the manager, who hands over the order once paid.
             case OrderStatus.PickedUp:
-                order.MarkPickedUp(now);
-                break;
+                throw new ForbiddenException(ErrorMessages.OnlyCustomerConfirmsPickup);
 
             default:
                 throw new InvalidInputException($"Unsupported target status '{command.NewStatus}'.");
         }
+
+        _eventPublisher.StageOrderStatusChanged(
+            new OrderStatusChangedEvent(order.Id, order.CustomerId, order.FarmId, order.FarmOwnerId, previousStatus, order.Status, now));
+
+        await _dbContext.SaveChangesOrConflictAsync(order, cancellationToken);
+
+        return ToResult(order);
+    }
+
+    // At the farm the customer shows their phone; the manager takes the payment and taps to confirm the pickup.
+    public async Task<OrderResult> ConfirmPickupAsync(
+        Caller caller,
+        ConfirmPickupCommand command,
+        CancellationToken cancellationToken)
+    {
+        var customerId = caller.RequireUserId();
+
+        var order = await _dbContext.Orders
+            .Include(o => o.Items)
+            .FirstOrDefaultAsync(o => o.Id == command.OrderId, cancellationToken);
+
+        if (order is null)
+        {
+            throw new NotFoundException(ErrorMessages.OrderNotFound);
+        }
+
+        caller.EnsureCanView(order);
+
+        if (order.CustomerId != customerId)
+        {
+            throw new ForbiddenException(ErrorMessages.OnlyCustomerConfirmsPickup);
+        }
+
+        order.EnsureVersion(command.ExpectedVersion);
+
+        var previousStatus = order.Status;
+        var now = Now;
+        order.MarkPickedUp(now);
 
         _eventPublisher.StageOrderStatusChanged(
             new OrderStatusChangedEvent(order.Id, order.CustomerId, order.FarmId, order.FarmOwnerId, previousStatus, order.Status, now));

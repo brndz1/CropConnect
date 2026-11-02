@@ -36,6 +36,7 @@ public static class ProtoMappings
         NotificationType.OrderStatusChanged => Protos.NotificationType.OrderStatusChanged,
         NotificationType.OrderCancelled => Protos.NotificationType.OrderCancelled,
         NotificationType.SensorAlert => Protos.NotificationType.SensorAlert,
+        NotificationType.ReviewCreated => Protos.NotificationType.ReviewCreated,
         _ => Protos.NotificationType.Unspecified
     };
 

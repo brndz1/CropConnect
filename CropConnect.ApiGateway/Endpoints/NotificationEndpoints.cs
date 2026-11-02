@@ -16,7 +16,8 @@ public static class NotificationEndpoints
         OrderCreated,
         OrderStatusChanged,
         OrderCancelled,
-        SensorAlert
+        SensorAlert,
+        ReviewCreated
     }
 
     public enum EmailStatus
@@ -82,6 +83,7 @@ public static class NotificationEndpoints
             ProtoNotificationType.OrderStatusChanged => NotificationType.OrderStatusChanged,
             ProtoNotificationType.OrderCancelled => NotificationType.OrderCancelled,
             ProtoNotificationType.SensorAlert => NotificationType.SensorAlert,
+            ProtoNotificationType.ReviewCreated => NotificationType.ReviewCreated,
             _ => null
         },
         notification.Title,

@@ -44,7 +44,7 @@ public sealed class OrderTests
     }
 
     [Fact]
-    public async Task Manager_moves_order_through_its_life_cycle_and_client_reviews_it()
+    public async Task Manager_readies_the_order_client_confirms_the_pickup_and_reviews_it()
     {
         var setup = await Scenario.FarmWithProductAsync();
         var client = await RegisterAsync("Client");
@@ -52,11 +52,17 @@ public sealed class OrderTests
 
         Assert.Contains((await GetAsync("api/orders", setup.Manager.Token)).Body!["items"]!.AsArray(), o => o!["id"]!.ToString() == orderId);
 
-        foreach (var status in new[] { "Confirmed", "ReadyForPickup", "PickedUp" })
+        foreach (var status in new[] { "Confirmed", "ReadyForPickup" })
         {
             var moved = await PutAsync($"api/orders/{orderId}/status", new { status }, setup.Manager.Token);
             Assert.Equal(status, moved.Text("status"));
         }
+
+        // Only the customer confirms the pickup, on their phone, once they have paid.
+        Assert.Equal(HttpStatusCode.Forbidden, (await PutAsync($"api/orders/{orderId}/status", new { status = "PickedUp" }, setup.Manager.Token)).Status);
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync($"api/orders/{orderId}/pickup", new { }, setup.Manager.Token)).Status);
+        var pickedUp = await PostAsync($"api/orders/{orderId}/pickup", new { }, client.Token);
+        Assert.Equal("PickedUp", pickedUp.Text("status"));
 
         var backwards = await PutAsync($"api/orders/{orderId}/status", new { status = "Confirmed" }, setup.Manager.Token);
         Assert.Equal(HttpStatusCode.UnprocessableEntity, backwards.Status);

@@ -53,6 +53,7 @@ database (section 2.6).
 | OrdersService | `CreateOrder`, `ListMyOrders` | JWT (client) | Gateway |
 | OrdersService | `ListOrders`, `UpdateOrderStatus` | JWT (manager of the farm, or admin) | Gateway |
 | OrdersService | `GetOrder`, `CancelOrder` | JWT (customer, farm owner or admin) | Gateway |
+| OrdersService | `ConfirmPickup` | JWT (the customer who placed the order) | Gateway |
 | ReviewsService | `CreateReview` | JWT (the customer, after pickup) | Gateway |
 | ReviewsService | `GetReviewByOrder` | JWT (customer, farm owner or admin) | Gateway |
 | ReviewsService | `ListFarmReviews` | Anonymous | Gateway |

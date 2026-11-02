@@ -118,7 +118,8 @@ surprise basket contents), **Required** needs one.
 | GET | `/api/orders` | Orders received by your farms (manager, RF12) or by any farm (administrator) | Required |
 | GET | `/api/orders/mine` | Your order history and status (client, RF13) | Required |
 | GET | `/api/orders/{id}` | Get an order you placed or received | Required |
-| PUT | `/api/orders/{id}/status` | Move an order to Confirmed, ReadyForPickup or PickedUp (manager, RF12) | Required |
+| PUT | `/api/orders/{id}/status` | Move an order to Confirmed or ReadyForPickup (manager, RF12) | Required |
+| POST | `/api/orders/{id}/pickup` | Confirm at the farm, once paid, that you picked up the order; only the customer can (RF12) | Required |
 | POST | `/api/orders/{id}/cancel` | Cancel an order and release its stock (client before ReadyForPickup, or manager, RF14) | Required |
 
 ### Reviews

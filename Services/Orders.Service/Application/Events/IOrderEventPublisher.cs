@@ -15,6 +15,8 @@ public interface IOrderEventPublisher
     void StageOrderStatusChanged(OrderStatusChangedEvent @event);
 
     void StageOrderCancelled(OrderCancelledEvent @event);
+
+    void StageReviewCreated(ReviewCreatedEvent @event);
 }
 
 public sealed class OutboxOrderEventPublisher : IOrderEventPublisher
@@ -22,6 +24,7 @@ public sealed class OutboxOrderEventPublisher : IOrderEventPublisher
     public const string OrderCreatedEventType = "OrderCreated";
     public const string OrderStatusChangedEventType = "OrderStatusChanged";
     public const string OrderCancelledEventType = "OrderCancelled";
+    public const string ReviewCreatedEventType = "ReviewCreated";
 
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
     {
@@ -43,6 +46,9 @@ public sealed class OutboxOrderEventPublisher : IOrderEventPublisher
 
     public void StageOrderCancelled(OrderCancelledEvent @event) =>
         Stage(OrderCancelledEventType, MessagingTopology.OrderCancelledRoutingKey, @event, @event.OccurredAt);
+
+    public void StageReviewCreated(ReviewCreatedEvent @event) =>
+        Stage(ReviewCreatedEventType, MessagingTopology.ReviewCreatedRoutingKey, @event, @event.OccurredAt);
 
     private void Stage<TEvent>(string eventType, string routingKey, TEvent @event, DateTime occurredAt) =>
         _dbContext.OutboxMessages.Add(OutboxMessage.Create(

@@ -1440,7 +1440,7 @@
         "tags": [
           "Orders"
         ],
-        "summary": "Move an order to Confirmed, ReadyForPickup or PickedUp (manager, RF12)",
+        "summary": "Move an order to Confirmed or ReadyForPickup (manager, RF12)",
         "parameters": [
           {
             "name": "id",
@@ -1460,6 +1460,52 @@
             }
           },
           "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/pickup": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Confirm at the farm, once paid, that you picked up the order (client, RF12)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ConfirmPickupBody"
+                  }
+                ]
+              }
+            }
+          }
         },
         "responses": {
           "200": {
@@ -2084,6 +2130,23 @@
           }
         }
       },
+      "ConfirmPickupBody": {
+        "required": [
+          "expectedVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "CreateFarmBody": {
         "required": [
           "name",
@@ -2588,6 +2651,7 @@
           "OrderStatusChanged",
           "OrderCancelled",
           "SensorAlert",
+          "ReviewCreated",
           null
         ]
       },

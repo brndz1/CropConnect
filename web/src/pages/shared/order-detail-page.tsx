@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Check, Loader2, MapPin, Star } from "lucide-react"
+import { Check, Hourglass, Loader2, MapPin, PackageCheck, Star } from "lucide-react"
 import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { toast } from "sonner"
@@ -20,7 +20,8 @@ import { cn } from "@/lib/utils"
 
 const steps: OrderStatus[] = ["Pending", "Confirmed", "ReadyForPickup", "PickedUp"]
 
-// What the farm manager does next from each state (task model G1: confirm → ready → picked up).
+// What the farm manager does next from each state (task model G1: confirm → ready). The pickup is confirmed by the
+// customer, on their phone, in front of the manager once they have paid.
 const nextStep: Partial<Record<OrderStatus, { status: OrderStatus; label: string; description: string }>> = {
   Pending: {
     status: "Confirmed",
@@ -31,11 +32,6 @@ const nextStep: Partial<Record<OrderStatus, { status: OrderStatus; label: string
     status: "ReadyForPickup",
     label: "Marcar pronta a levantar",
     description: "O cliente é avisado de que pode vir levantar.",
-  },
-  ReadyForPickup: {
-    status: "PickedUp",
-    label: "Registar levantamento",
-    description: "Confirma que o cliente levantou e pagou a encomenda.",
   },
 }
 
@@ -160,6 +156,14 @@ export function OrderDetailPage() {
     },
     onError: (e) => toast.error(errorMessage(e)),
   })
+  const pickup = useMutation({
+    mutationFn: () => api.post<Order>(`/api/orders/${id}/pickup`, { expectedVersion: order.data?.version }),
+    onSuccess: (updated) => {
+      onChanged(updated)
+      toast.success("Levantamento confirmado. Obrigado por comprar local!")
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  })
   const cancel = useMutation({
     mutationFn: () =>
       api.post<Order>(`/api/orders/${id}/cancel`, {
@@ -185,7 +189,8 @@ export function OrderDetailPage() {
     ? o.status === "Pending" || o.status === "Confirmed"
     : isManager && o.status !== "PickedUp" && o.status !== "Cancelled"
   const step = isManager ? nextStep[o.status] : undefined
-  const busy = advance.isPending || cancel.isPending
+  const busy = advance.isPending || pickup.isPending || cancel.isPending
+  const awaitingPickup = o.status === "ReadyForPickup"
 
   return (
     <>
@@ -238,6 +243,37 @@ export function OrderDetailPage() {
         </div>
 
         <aside className="grid h-fit gap-4">
+          {isClient && awaitingPickup && (
+            <div className="grid gap-3 rounded-xl border-2 border-primary bg-secondary/50 p-4">
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                <PackageCheck className="size-5 text-primary" aria-hidden /> Levantar na quinta
+              </h2>
+              <p className="text-sm">
+                Mostre este ecrã ao produtor. Depois de pagar, o produtor toca em «Confirmar levantamento».
+              </p>
+              <ConfirmDialog
+                trigger={
+                  <Button disabled={busy} size="lg" className="w-full">
+                    {pickup.isPending && <Loader2 className="animate-spin" />}
+                    Confirmar levantamento
+                  </Button>
+                }
+                title="Confirmar o levantamento?"
+                description={`Confirme só depois de pagar ${formatPrice(o.totalAmount)} e receber a encomenda.`}
+                confirmLabel="Confirmar levantamento"
+                onConfirm={() => pickup.mutate()}
+              />
+            </div>
+          )}
+          {isManager && awaitingPickup && (
+            <div className="flex gap-3 rounded-xl border p-4 text-sm">
+              <Hourglass className="mt-0.5 size-5 shrink-0 text-terracotta" aria-hidden />
+              <p>
+                À espera do cliente. Depois de receber o pagamento, toque em «Confirmar levantamento» no telemóvel do
+                cliente; a encomenda passa a levantada e recebe uma notificação.
+              </p>
+            </div>
+          )}
           {(step || canCancel) && (
             <div className="grid gap-3 rounded-xl bg-muted p-4">
               {step && (

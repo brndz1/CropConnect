@@ -15,6 +15,10 @@ public sealed record UpdateOrderStatusCommand(
     OrderStatus NewStatus,
     int? ExpectedVersion);
 
+public sealed record ConfirmPickupCommand(
+    Guid OrderId,
+    int? ExpectedVersion);
+
 public sealed record CancelOrderCommand(
     Guid OrderId,
     string? Reason,

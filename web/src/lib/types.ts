@@ -100,7 +100,8 @@ export interface Review {
   createdAt: string
 }
 
-export type NotificationType = "OrderCreated" | "OrderStatusChanged" | "OrderCancelled" | "SensorAlert"
+export type NotificationType =
+  "OrderCreated" | "OrderStatusChanged" | "OrderCancelled" | "SensorAlert" | "ReviewCreated"
 
 export interface AppNotification {
   id: string

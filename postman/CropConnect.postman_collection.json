@@ -1683,9 +1683,9 @@
           ]
         },
         {
-          "name": "Transição inválida (Confirmada → Levantada): 422",
+          "name": "Cliente confirma o levantamento antes de estar pronta: 422",
           "request": {
-            "method": "PUT",
+            "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
@@ -1693,7 +1693,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/orders/{{orderId}}/status",
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}/pickup",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1701,7 +1701,7 @@
                 "api",
                 "orders",
                 "{{orderId}}",
-                "status"
+                "pickup"
               ]
             },
             "auth": {
@@ -1709,14 +1709,14 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{managerToken}}",
+                  "value": "{{clientToken}}",
                   "type": "string"
                 }
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"PickedUp\",\n  \"expectedVersion\": null\n}",
+              "raw": "{\n  \"expectedVersion\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1903,7 +1903,7 @@
           ]
         },
         {
-          "name": "Gestor regista o levantamento",
+          "name": "Gestor não pode dar como levantada: 403",
           "request": {
             "method": "PUT",
             "header": [
@@ -1937,6 +1937,60 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"PickedUp\",\n  \"expectedVersion\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cliente confirma o levantamento depois de pagar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}/pickup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{orderId}}",
+                "pickup"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{clientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expectedVersion\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"

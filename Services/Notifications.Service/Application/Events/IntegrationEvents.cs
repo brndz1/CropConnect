@@ -31,6 +31,16 @@ public sealed record OrderCancelledMessage(
     bool CancelledByCustomer,
     DateTime OccurredAt);
 
+public sealed record ReviewCreatedMessage(
+    Guid ReviewId,
+    Guid OrderId,
+    Guid CustomerId,
+    Guid FarmId,
+    Guid FarmOwnerId,
+    int Rating,
+    string? Comment,
+    DateTime OccurredAt);
+
 public sealed record SensorAlertRaisedMessage(
     Guid AlertId,
     Guid FarmId,

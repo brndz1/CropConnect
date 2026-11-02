@@ -58,7 +58,7 @@ the W3C `traceparent` header carries the trace of the request that caused the ev
 | Routing key | Event | Producer | Who is notified |
 |---|---|---|---|
 | `order.created` | `OrderCreated` | Orders | Farm owner (RF19) |
-| `order.status.changed` | `OrderStatusChanged` | Orders | Customer, unless the order went back to Pending (RF20) |
+| `order.status.changed` | `OrderStatusChanged` | Orders | Customer for Confirmed and ReadyForPickup; farm owner for PickedUp, which the customer confirms (RF20) |
 | `order.cancelled` | `OrderCancelled` | Orders | The other party: the farm owner if the customer cancelled, otherwise the customer (RF20) |
 | `sensor.alert.raised` | `SensorAlertRaised` | Sensors | Farm owner (RF21) |
 

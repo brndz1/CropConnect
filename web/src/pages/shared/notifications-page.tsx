@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Bell, CheckCheck, ClipboardList, ThermometerSun, XCircle } from "lucide-react"
+import { Bell, CheckCheck, ClipboardList, Star, ThermometerSun, XCircle } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { PageHeader } from "@/components/page-header"
 import { EmptyState, ErrorState, LoadingList } from "@/components/states"
@@ -15,6 +15,7 @@ const icons: Record<NotificationType, typeof Bell> = {
   OrderStatusChanged: ClipboardList,
   OrderCancelled: XCircle,
   SensorAlert: ThermometerSun,
+  ReviewCreated: Star,
 }
 
 // RF10, RF18, RF20: the notification centre, newest first.
@@ -37,6 +38,7 @@ export function NotificationsPage() {
     if (!notification.readAt) markRead.mutate(notification.id)
     const manager = session?.role !== "Client"
     if (notification.type === "SensorAlert") navigate(`/gestor/sensores?quinta=${notification.farmId}`)
+    else if (notification.type === "ReviewCreated") navigate(`/gestor/avaliacoes?quinta=${notification.farmId}`)
     else
       navigate(
         manager ? `/gestor/encomendas/${notification.relatedEntityId}` : `/encomendas/${notification.relatedEntityId}`,
@@ -63,7 +65,7 @@ export function NotificationsPage() {
         <EmptyState
           icon={Bell}
           title="Sem notificações"
-          description="Os avisos sobre encomendas e alertas aparecem aqui."
+          description="Os avisos sobre encomendas, avaliações e alertas aparecem aqui."
         />
       ) : (
         <ul className="grid gap-2">

@@ -8,10 +8,11 @@ public static class MessagingTopology
 {
     public const string EventsExchange = "cropconnect.events";
 
-    // Orders -> Notifications (RF19, RF20).
+    // Orders -> Notifications (RF15, RF19, RF20).
     public const string OrderCreatedRoutingKey = "order.created";
     public const string OrderStatusChangedRoutingKey = "order.status.changed";
     public const string OrderCancelledRoutingKey = "order.cancelled";
+    public const string ReviewCreatedRoutingKey = "review.created";
 
     // Sensors -> Notifications (RF21).
     public const string SensorAlertRaisedRoutingKey = "sensor.alert.raised";
@@ -36,6 +37,7 @@ public static class MessagingTopology
         OrderCreatedRoutingKey,
         OrderStatusChangedRoutingKey,
         OrderCancelledRoutingKey,
+        ReviewCreatedRoutingKey,
         SensorAlertRaisedRoutingKey,
         EmailVerificationRequestedRoutingKey,
         PasswordResetRequestedRoutingKey,

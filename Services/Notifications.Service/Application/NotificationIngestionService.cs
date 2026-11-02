@@ -63,6 +63,7 @@ public sealed class NotificationIngestionService : INotificationIngestionService
             MessagingTopology.OrderCreatedRoutingKey => await FromOrderCreatedAsync(Parse<OrderCreatedMessage>(body), cancellationToken),
             MessagingTopology.OrderStatusChangedRoutingKey => await FromOrderStatusChangedAsync(Parse<OrderStatusChangedMessage>(body), cancellationToken),
             MessagingTopology.OrderCancelledRoutingKey => await FromOrderCancelledAsync(Parse<OrderCancelledMessage>(body), cancellationToken),
+            MessagingTopology.ReviewCreatedRoutingKey => await FromReviewCreatedAsync(Parse<ReviewCreatedMessage>(body), cancellationToken),
             MessagingTopology.SensorAlertRaisedRoutingKey => FromSensorAlert(Parse<SensorAlertRaisedMessage>(body)),
             _ => throw new InvalidInputException($"Unsupported event '{routingKey}'.")
         };
@@ -199,27 +200,28 @@ public sealed class NotificationIngestionService : INotificationIngestionService
         var farm = await FarmNameAsync(message.FarmId, cancellationToken);
         var reference = Reference(message.OrderId);
 
-        (string Title, string Text)? content = message.NewStatus.ToLowerInvariant() switch
+        // The customer confirms the pickup themselves, so the farm owner is the one told about it.
+        (Guid Recipient, string Title, string Text)? content = message.NewStatus.ToLowerInvariant() switch
         {
-            "confirmed" => ($"Order {reference} confirmed",
+            "confirmed" => (message.CustomerId, $"Order {reference} confirmed",
                 $"{farm} confirmed your order {reference}. You will be notified when it is ready for pickup."),
-            "readyforpickup" => ($"Order {reference} is ready for pickup",
-                $"Your order {reference} is ready for pickup at {farm}. You pay when you pick it up."),
-            "pickedup" => ($"Order {reference} picked up",
-                $"{farm} registered your order {reference} as picked up. Thank you for buying locally!"),
+            "readyforpickup" => (message.CustomerId, $"Order {reference} is ready for pickup",
+                $"Your order {reference} is ready for pickup at {farm}. You pay when you pick it up, then confirm the pickup in the app."),
+            "pickedup" => (message.FarmOwnerId, $"Order {reference} picked up",
+                $"The customer confirmed picking up order {reference} at {farm}."),
             "pending" => null,
-            _ => ($"Order {reference} updated",
+            _ => (message.CustomerId, $"Order {reference} updated",
                 $"The status of your order {reference} at {farm} changed to {message.NewStatus}.")
         };
 
         if (content is null)
         {
-            _logger.LogDebug("Order {OrderId} moved to {Status}; the customer is not notified", message.OrderId, message.NewStatus);
+            _logger.LogDebug("Order {OrderId} moved to {Status}; nobody is notified", message.OrderId, message.NewStatus);
             return null;
         }
 
         return new NotificationDraft(
-            message.CustomerId,
+            content.Value.Recipient,
             NotificationType.OrderStatusChanged,
             content.Value.Title,
             content.Value.Text,
@@ -249,6 +251,22 @@ public sealed class NotificationIngestionService : INotificationIngestionService
                 $"{farm} cancelled your order {reference}.{reason}",
                 message.OrderId,
                 message.FarmId);
+    }
+
+    // RF15: the farm owner sees each new rating and its comment.
+    private async Task<NotificationDraft> FromReviewCreatedAsync(ReviewCreatedMessage message, CancellationToken cancellationToken)
+    {
+        var farm = await FarmNameAsync(message.FarmId, cancellationToken);
+        var stars = message.Rating == 1 ? "1 star" : $"{message.Rating} stars";
+        var comment = string.IsNullOrWhiteSpace(message.Comment) ? string.Empty : $" Comment: {message.Comment.Trim()}";
+
+        return new NotificationDraft(
+            message.FarmOwnerId,
+            NotificationType.ReviewCreated,
+            $"New review for {farm}",
+            $"A customer gave order {Reference(message.OrderId)} {stars}.{comment}",
+            message.ReviewId,
+            message.FarmId);
     }
 
     // A farm deleted after the order still deserves a readable message.

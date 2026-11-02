@@ -10,6 +10,7 @@ public static class MessagingTopology
     public const string OrderCreatedRoutingKey = "order.created";
     public const string OrderStatusChangedRoutingKey = "order.status.changed";
     public const string OrderCancelledRoutingKey = "order.cancelled";
+    public const string ReviewCreatedRoutingKey = "review.created";
 
     public static Task DeclareEventsAsync(IChannel channel, CancellationToken cancellationToken) =>
         channel.ExchangeDeclareAsync(EventsExchange, ExchangeType.Topic, durable: true, autoDelete: false, cancellationToken: cancellationToken);

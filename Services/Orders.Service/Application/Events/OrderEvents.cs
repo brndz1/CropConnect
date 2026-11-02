@@ -30,3 +30,14 @@ public sealed record OrderCancelledEvent(
     string? Reason,
     bool CancelledByCustomer,
     DateTime OccurredAt);
+
+// Tells the farm owner a customer rated a picked-up order (RF15).
+public sealed record ReviewCreatedEvent(
+    Guid ReviewId,
+    Guid OrderId,
+    Guid CustomerId,
+    Guid FarmId,
+    Guid FarmOwnerId,
+    int Rating,
+    string? Comment,
+    DateTime OccurredAt);
