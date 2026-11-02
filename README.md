@@ -76,8 +76,8 @@ are also published on their own ports, on `127.0.0.1` only:
 - Emails are caught by Mailpit: the notifications and the account emails (email verification, password reset,
   invitation, welcome, password changed, account deactivated or reactivated), whose links open the web app. To
   deliver them for real, set in `.env` `EMAIL_PROVIDER=Smtp` with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`,
-  `SMTP_PASSWORD` and a verified `EMAIL_FROM_ADDRESS` (e.g. Brevo's relay), or `EMAIL_PROVIDER=Mailtrap` with
-  `MAILTRAP_API_TOKEN`. Self-registered users log in only after opening the link in the verification email.
+  `SMTP_PASSWORD` and a verified `EMAIL_FROM_ADDRESS` (e.g. Brevo's relay). Self-registered users log in only
+  after opening the link in the verification email.
 - The farm sensors are simulated by Node-RED, which only starts with the `simulation` profile so the tests
   never see its random alerts: `docker compose --profile simulation up -d --build`. See
   [Simulation/node-red](Simulation/node-red/README.md).
