@@ -1,4 +1,6 @@
+using System.Text.Json.Nodes;
 using Orders.Service.Application;
+using Orders.Service.Application.Events;
 using Orders.Service.Models;
 using Orders.Service.Tests.Infrastructure;
 
@@ -9,15 +11,20 @@ public sealed class ReviewApplicationServiceTests : IDisposable
     private readonly TestDatabase _database = new();
     private readonly Guid _customerId = Guid.NewGuid();
     private readonly Guid _farmId = Guid.NewGuid();
+    private readonly Guid _farmOwnerId = Guid.NewGuid();
 
     public void Dispose() => _database.Dispose();
 
-    private ReviewApplicationService Service() => new(_database.CreateContext(), TimeProvider.System);
+    private ReviewApplicationService Service()
+    {
+        var context = _database.CreateContext();
+        return new(context, new OutboxOrderEventPublisher(context), TimeProvider.System);
+    }
 
     private async Task<Guid> SeedOrderAsync(OrderStatus status)
     {
         var now = DateTime.UtcNow;
-        var order = Order.Create(Guid.NewGuid(), _customerId, _farmId, Guid.NewGuid(), null, now);
+        var order = Order.Create(Guid.NewGuid(), _customerId, _farmId, _farmOwnerId, null, now);
         order.AddItem(OrderItem.Create(order.Id, Guid.NewGuid(), "Alface", 1, 1m));
 
         if (status != OrderStatus.Pending)
@@ -52,6 +59,15 @@ public sealed class ReviewApplicationServiceTests : IDisposable
 
         var farmReviews = await Service().ListFarmReviewsAsync(new ListFarmReviewsQuery(_farmId, PageRequest.Create(1, 10)), CancellationToken.None);
         Assert.Equal(1, farmReviews.TotalCount);
+
+        // The farm owner is told through the outbox, in the same transaction as the review.
+        await using var context = _database.CreateContext();
+        var message = Assert.Single(context.OutboxMessages);
+        Assert.Equal("review.created", message.RoutingKey);
+        var payload = JsonNode.Parse(message.Payload)!;
+        Assert.Equal(review.Id.ToString(), payload["reviewId"]!.ToString());
+        Assert.Equal(_farmOwnerId.ToString(), payload["farmOwnerId"]!.ToString());
+        Assert.Equal(5, payload["rating"]!.GetValue<int>());
     }
 
     [Fact]

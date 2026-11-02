@@ -101,6 +101,18 @@ public sealed class OrdersGrpcService : OrdersService.OrdersServiceBase
         return result.ToProto();
     }
 
+    public override async Task<OrderInfo> ConfirmPickup(ConfirmPickupRequest request, ServerCallContext context)
+    {
+        var caller = context.GetCaller();
+        var orderId = RequestParsing.ParseId(request.Id, nameof(request.Id));
+        var expectedVersion = RequestParsing.OptionalNumber(request.HasExpectedVersion, request.ExpectedVersion);
+
+        var command = new ConfirmPickupCommand(orderId, expectedVersion);
+        var result = await _orderService.ConfirmPickupAsync(caller, command, context.CancellationToken);
+
+        return result.ToProto();
+    }
+
     public override async Task<OrderInfo> CancelOrder(CancelOrderRequest request, ServerCallContext context)
     {
         var caller = context.GetCaller();

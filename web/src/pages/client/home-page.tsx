@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
-import { ArrowRight, Gift, MapPin, Tractor } from "lucide-react"
+import { ArrowRight, Gift, Tractor } from "lucide-react"
 import { Link } from "react-router-dom"
+import { FarmCard, farmGrid } from "@/components/farm-card"
 import { ProductCard, productGrid } from "@/components/product-card"
 import { EmptyState, ErrorState, LoadingList } from "@/components/states"
 import { Button } from "@/components/ui/button"
@@ -68,31 +69,17 @@ export function HomePage() {
         </Section>
       )}
 
-      <Section title="Quintas" link="/explorar">
+      <Section title="Quintas" link="/quintas">
         {farms.isPending ? (
-          <LoadingList rows={3} className="grid gap-3 sm:grid-cols-3" />
+          <LoadingList rows={3} className={farmGrid} />
         ) : farms.isError ? (
           <ErrorState error={farms.error} onRetry={() => farms.refetch()} />
         ) : farms.data.items.length === 0 ? (
           <EmptyState icon={Tractor} title="Ainda não há quintas" description="Volte em breve." />
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className={farmGrid}>
             {farms.data.items.slice(0, 6).map((farm) => (
-              <Link
-                key={farm.id}
-                to={`/quintas/${farm.id}`}
-                className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-shadow hover:shadow-md"
-              >
-                <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-secondary text-primary">
-                  <Tractor className="size-6" aria-hidden />
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate font-heading font-semibold text-brand-900">{farm.name}</span>
-                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <MapPin className="size-4" aria-hidden /> {farm.location}
-                  </span>
-                </span>
-              </Link>
+              <FarmCard key={farm.id} farm={farm} />
             ))}
           </div>
         )}

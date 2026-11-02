@@ -10,6 +10,7 @@ import { RegisterPage } from "@/pages/auth/register-page"
 import { CartPage } from "@/pages/client/cart-page"
 import { CatalogPage } from "@/pages/client/catalog-page"
 import { FarmPage } from "@/pages/client/farm-page"
+import { FarmsPage } from "@/pages/client/farms-page"
 import { HomePage } from "@/pages/client/home-page"
 import { OrdersPage } from "@/pages/client/orders-page"
 import { ProductPage } from "@/pages/client/product-page"
@@ -30,6 +31,9 @@ const ManagerOrdersPage = lazy(() =>
 )
 const ManagerProductsPage = lazy(() =>
   import("@/pages/manager/products-page").then((m) => ({ default: m.ManagerProductsPage })),
+)
+const ManagerReviewsPage = lazy(() =>
+  import("@/pages/manager/reviews-page").then((m) => ({ default: m.ManagerReviewsPage })),
 )
 const SensorsPage = lazy(() => import("@/pages/manager/sensors-page").then((m) => ({ default: m.SensorsPage })))
 
@@ -63,6 +67,7 @@ export default function App() {
           <Route index element={<PublicHome />} />
           <Route path="explorar" element={<CatalogPage />} />
           <Route path="produtos/:id" element={<ProductPage />} />
+          <Route path="quintas" element={<FarmsPage />} />
           <Route path="quintas/:id" element={<FarmPage />} />
           <Route path="carrinho" element={<CartPage />} />
 
@@ -128,6 +133,14 @@ export default function App() {
             element={
               <RequireRole roles={["Manager"]}>
                 <ManagerProductsPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="gestor/avaliacoes"
+            element={
+              <RequireRole roles={["Manager"]}>
+                <ManagerReviewsPage />
               </RequireRole>
             }
           />

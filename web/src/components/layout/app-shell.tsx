@@ -8,6 +8,7 @@ import {
   Search,
   Settings,
   ShoppingCart,
+  Star,
   ThermometerSun,
   Tractor,
   User,
@@ -47,10 +48,12 @@ const destinations: Record<Role | "Guest", Destination[]> = {
   Guest: [
     { to: "/", label: "Início", icon: House, end: true },
     { to: "/explorar", label: "Explorar", icon: Search },
+    { to: "/quintas", label: "Quintas", icon: Tractor },
   ],
   Client: [
     { to: "/", label: "Início", icon: House, end: true },
     { to: "/explorar", label: "Explorar", icon: Search },
+    { to: "/quintas", label: "Quintas", icon: Tractor, desktopOnly: true },
     { to: "/encomendas", label: "Encomendas", icon: ClipboardList },
     { to: "/perfil", label: "Perfil", icon: User },
   ],
@@ -59,6 +62,7 @@ const destinations: Record<Role | "Guest", Destination[]> = {
     { to: "/gestor/encomendas", label: "Encomendas", icon: ClipboardList },
     { to: "/gestor/produtos", label: "Produtos", icon: Package },
     { to: "/gestor/sensores", label: "Sensores", icon: ThermometerSun },
+    { to: "/gestor/avaliacoes", label: "Avaliações", icon: Star, desktopOnly: true },
     { to: "/gestor/quintas", label: "Quintas", icon: Tractor, desktopOnly: true },
   ],
   Admin: [
@@ -151,6 +155,16 @@ export function AppShell() {
                   {session.role === "Manager" && (
                     <DropdownMenuItem onSelect={() => navigate("/gestor/quintas")}>
                       <Tractor /> As minhas quintas
+                    </DropdownMenuItem>
+                  )}
+                  {session.role === "Manager" && (
+                    <DropdownMenuItem onSelect={() => navigate("/gestor/avaliacoes")}>
+                      <Star /> Avaliações
+                    </DropdownMenuItem>
+                  )}
+                  {session.role === "Client" && (
+                    <DropdownMenuItem onSelect={() => navigate("/quintas")}>
+                      <Tractor /> Quintas
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Orders.Service.Application.Events;
 using Orders.Service.Data;
 using Orders.Service.Models;
 
@@ -7,11 +8,13 @@ namespace Orders.Service.Application;
 public sealed class ReviewApplicationService : IReviewApplicationService
 {
     private readonly OrdersDbContext _dbContext;
+    private readonly IOrderEventPublisher _eventPublisher;
     private readonly TimeProvider _timeProvider;
 
-    public ReviewApplicationService(OrdersDbContext dbContext, TimeProvider timeProvider)
+    public ReviewApplicationService(OrdersDbContext dbContext, IOrderEventPublisher eventPublisher, TimeProvider timeProvider)
     {
         _dbContext = dbContext;
+        _eventPublisher = eventPublisher;
         _timeProvider = timeProvider;
     }
 
@@ -59,6 +62,15 @@ public sealed class ReviewApplicationService : IReviewApplicationService
             Now);
 
         _dbContext.Reviews.Add(review);
+        _eventPublisher.StageReviewCreated(new ReviewCreatedEvent(
+            review.Id,
+            order.Id,
+            customerId,
+            order.FarmId,
+            order.FarmOwnerId,
+            review.Rating,
+            review.Comment,
+            review.CreatedAt));
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return ToResult(review);

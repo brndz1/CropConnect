@@ -33,17 +33,39 @@ public sealed class NotificationTests
     }
 
     [Fact]
-    public async Task Client_is_notified_of_each_status_change()
+    public async Task Client_is_notified_of_each_status_change_and_the_manager_of_the_pickup()
     {
         var setup = await Scenario.FarmWithProductAsync();
         var client = await RegisterAsync("Client");
         var orderId = await Scenario.PlaceOrderAsync(client, setup.ProductId);
 
-        foreach (var (status, title) in new[] { ("Confirmed", "confirmed"), ("ReadyForPickup", "ready for pickup"), ("PickedUp", "picked up") })
+        foreach (var (status, title) in new[] { ("Confirmed", "confirmed"), ("ReadyForPickup", "ready for pickup") })
         {
             await PutAsync($"api/orders/{orderId}/status", new { status }, setup.Manager.Token);
             await WaitForNotificationAsync(client, n => n["relatedEntityId"]!.ToString() == orderId && n["title"]!.ToString().Contains(title), $"RF20 {status} notification");
         }
+
+        await PostAsync($"api/orders/{orderId}/pickup", new { }, client.Token);
+        await WaitForNotificationAsync(setup.Manager, n => n["relatedEntityId"]!.ToString() == orderId && n["title"]!.ToString().Contains("picked up"), "manager told of the pickup");
+    }
+
+    [Fact]
+    public async Task Manager_is_notified_of_a_new_review()
+    {
+        var setup = await Scenario.FarmWithProductAsync();
+        var client = await RegisterAsync("Client");
+        var orderId = await Scenario.PlaceOrderAsync(client, setup.ProductId);
+        foreach (var status in new[] { "Confirmed", "ReadyForPickup" })
+        {
+            await PutAsync($"api/orders/{orderId}/status", new { status }, setup.Manager.Token);
+        }
+        await PostAsync($"api/orders/{orderId}/pickup", new { }, client.Token);
+
+        await PostAsync($"api/orders/{orderId}/review", new { rating = 4, comment = "Muito fresco" }, client.Token);
+
+        var notification = await WaitForNotificationAsync(setup.Manager, n => n["type"]!.ToString() == "ReviewCreated", "RF15 review notification");
+        Assert.Equal(setup.FarmId, notification["farmId"]!.ToString());
+        Assert.Contains("Muito fresco", notification["message"]!.ToString());
     }
 
     [Fact]

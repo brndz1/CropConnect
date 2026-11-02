@@ -5,5 +5,6 @@ public enum NotificationType
     OrderCreated = 1,
     OrderStatusChanged = 2,
     OrderCancelled = 3,
-    SensorAlert = 4
+    SensorAlert = 4,
+    ReviewCreated = 5
 }

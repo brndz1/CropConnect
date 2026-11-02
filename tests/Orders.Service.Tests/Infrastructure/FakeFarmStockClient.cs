@@ -4,10 +4,10 @@ using Orders.Service.Models;
 
 namespace Orders.Service.Tests.Infrastructure;
 
-// Stands in for Farms.Service: every product costs 2.50 and belongs to the same farm.
+// Stands in for Farms.Service: every product costs 2.50 and belongs to FarmId, which a test can switch.
 public sealed class FakeFarmStockClient : IFarmStockClient
 {
-    public Guid FarmId { get; } = Guid.NewGuid();
+    public Guid FarmId { get; set; } = Guid.NewGuid();
 
     public Guid FarmOwnerId { get; } = Guid.NewGuid();
 

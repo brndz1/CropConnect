@@ -95,7 +95,9 @@ public sealed class FarmApplicationService : IFarmApplicationService
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             var pattern = query.Search.ToContainsPattern();
-            farms = farms.Where(f => EF.Functions.ILike(f.Name, pattern, PersistenceExtensions.LikeEscapeCharacter));
+            farms = farms.Where(f =>
+                EF.Functions.ILike(f.Name, pattern, PersistenceExtensions.LikeEscapeCharacter) ||
+                EF.Functions.ILike(f.Location, pattern, PersistenceExtensions.LikeEscapeCharacter));
         }
 
         return await farms

@@ -60,7 +60,6 @@ public sealed class NotificationIngestionServiceTests : IDisposable
     [Theory]
     [InlineData("confirmed", "Order #3FA85F64 confirmed")]
     [InlineData("readyForPickup", "Order #3FA85F64 is ready for pickup")]
-    [InlineData("pickedUp", "Order #3FA85F64 picked up")]
     [InlineData("somethingNew", "Order #3FA85F64 updated")]
     public async Task Status_changes_notify_the_customer(string status, string title)
     {
@@ -69,6 +68,17 @@ public sealed class NotificationIngestionServiceTests : IDisposable
         var notification = Assert.Single(Stored());
         Assert.Equal(_customerId, notification.RecipientId);
         Assert.Equal(title, notification.Title);
+    }
+
+    [Fact]
+    public async Task Pickup_confirmed_by_the_customer_tells_the_farm_owner()
+    {
+        Assert.True(await HandleAsync("order.status.changed", StatusChanged("pickedUp")));
+
+        var notification = Assert.Single(Stored());
+        Assert.Equal(_ownerId, notification.RecipientId);
+        Assert.Equal("Order #3FA85F64 picked up", notification.Title);
+        Assert.Equal("The customer confirmed picking up order #3FA85F64 at Quinta do Vale.", notification.Message);
     }
 
     [Fact]
@@ -96,6 +106,23 @@ public sealed class NotificationIngestionServiceTests : IDisposable
         var notification = Assert.Single(Stored());
         Assert.Equal(_customerId, notification.RecipientId);
         Assert.Equal("Quinta do Vale cancelled your order #3FA85F64.", notification.Message);
+    }
+
+    [Fact]
+    public async Task New_review_tells_the_farm_owner_the_rating_and_comment()
+    {
+        var reviewId = Guid.NewGuid();
+        var json = $$"""{"reviewId":"{{reviewId}}","orderId":"{{_orderId}}","customerId":"{{_customerId}}","farmId":"{{_farmId}}","farmOwnerId":"{{_ownerId}}","rating":4,"comment":"Alfaces muito frescas","occurredAt":"2026-05-01T10:00:00Z"}""";
+
+        Assert.True(await HandleAsync("review.created", json));
+
+        var notification = Assert.Single(Stored());
+        Assert.Equal(_ownerId, notification.RecipientId);
+        Assert.Equal(NotificationType.ReviewCreated, notification.Type);
+        Assert.Equal("New review for Quinta do Vale", notification.Title);
+        Assert.Equal("A customer gave order #3FA85F64 4 stars. Comment: Alfaces muito frescas", notification.Message);
+        Assert.Equal(reviewId, notification.RelatedEntityId);
+        Assert.Equal(_farmId, notification.FarmId);
     }
 
     [Fact]

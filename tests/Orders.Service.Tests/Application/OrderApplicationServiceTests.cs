@@ -132,6 +132,40 @@ public sealed class OrderApplicationServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Only_the_customer_confirms_the_pickup()
+    {
+        var client = Callers.Client();
+        var order = await PlaceOrderAsync(client);
+        var owner = Callers.Manager(_stock.FarmOwnerId);
+        await Service().UpdateOrderStatusAsync(owner, new UpdateOrderStatusCommand(order.Id, OrderStatus.Confirmed, null), CancellationToken.None);
+        await Service().UpdateOrderStatusAsync(owner, new UpdateOrderStatusCommand(order.Id, OrderStatus.ReadyForPickup, null), CancellationToken.None);
+
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
+            Service().UpdateOrderStatusAsync(owner, new UpdateOrderStatusCommand(order.Id, OrderStatus.PickedUp, null), CancellationToken.None));
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
+            Service().ConfirmPickupAsync(owner, new ConfirmPickupCommand(order.Id, null), CancellationToken.None));
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
+            Service().ConfirmPickupAsync(Callers.Client(), new ConfirmPickupCommand(order.Id, null), CancellationToken.None));
+
+        var pickedUp = await Service().ConfirmPickupAsync(client, new ConfirmPickupCommand(order.Id, null), CancellationToken.None);
+
+        Assert.Equal(OrderStatus.PickedUp, pickedUp.Status);
+        var payload = JsonNode.Parse(Outbox().Last(m => m.RoutingKey == "order.status.changed").Payload)!;
+        Assert.Equal("readyForPickup", payload["previousStatus"]!.ToString());
+        Assert.Equal("pickedUp", payload["newStatus"]!.ToString());
+    }
+
+    [Fact]
+    public async Task Pickup_cannot_be_confirmed_before_the_order_is_ready()
+    {
+        var client = Callers.Client();
+        var order = await PlaceOrderAsync(client);
+
+        await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            Service().ConfirmPickupAsync(client, new ConfirmPickupCommand(order.Id, null), CancellationToken.None));
+    }
+
+    [Fact]
     public async Task Other_managers_cannot_change_the_status()
     {
         var order = await PlaceOrderAsync(Callers.Client());
@@ -241,6 +275,25 @@ public sealed class OrderApplicationServiceTests : IDisposable
 
         await Assert.ThrowsAsync<ForbiddenException>(() =>
             Service().ListOrdersAsync(alice, new ListOrdersQuery(PageRequest.Create(1, 10), null, null), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task A_manager_with_two_farms_lists_the_orders_of_the_one_asked_for()
+    {
+        var owner = Callers.Manager(_stock.FarmOwnerId);
+        var firstFarm = _stock.FarmId;
+        await PlaceOrderAsync(Callers.Client());
+        var secondFarm = Guid.NewGuid();
+        _stock.FarmId = secondFarm;
+        await PlaceOrderAsync(Callers.Client());
+        await PlaceOrderAsync(Callers.Client());
+
+        var first = await Service().ListOrdersAsync(owner, new ListOrdersQuery(PageRequest.Create(1, 10), firstFarm, null), CancellationToken.None);
+        Assert.Equal(firstFarm, Assert.Single(first.Items).FarmId);
+
+        var second = await Service().ListOrdersAsync(owner, new ListOrdersQuery(PageRequest.Create(1, 10), secondFarm, null), CancellationToken.None);
+        Assert.Equal(2, second.TotalCount);
+        Assert.All(second.Items, order => Assert.Equal(secondFarm, order.FarmId));
     }
 
     [Fact]

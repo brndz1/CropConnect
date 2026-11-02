@@ -39,6 +39,8 @@ public static class OrderEndpoints
 
     public sealed record UpdateStatusBody(OrderStatus Status, int? ExpectedVersion);
 
+    public sealed record ConfirmPickupBody(int? ExpectedVersion);
+
     public sealed record CancelOrderBody(string? Reason, int? ExpectedVersion);
 
     public sealed record ReviewResponse(string Id, string OrderId, string CustomerId, string FarmId, int Rating, string Comment, DateTime? CreatedAt);
@@ -100,7 +102,15 @@ public static class OrderEndpoints
                 if (body.ExpectedVersion is not null) request.ExpectedVersion = body.ExpectedVersion.Value;
                 return TypedResults.Ok(ToResponse(await client.UpdateOrderStatusAsync(request, cancellationToken: ct)));
             })
-            .WithSummary("Move an order to Confirmed, ReadyForPickup or PickedUp (manager, RF12)");
+            .WithSummary("Move an order to Confirmed or ReadyForPickup (manager, RF12)");
+
+        orders.MapPost("/{id}/pickup", async Task<Ok<OrderResponse>> (string id, ConfirmPickupBody? body, OrdersService.OrdersServiceClient client, CancellationToken ct) =>
+            {
+                var request = new ConfirmPickupRequest { Id = id };
+                if (body?.ExpectedVersion is not null) request.ExpectedVersion = body.ExpectedVersion.Value;
+                return TypedResults.Ok(ToResponse(await client.ConfirmPickupAsync(request, cancellationToken: ct)));
+            })
+            .WithSummary("Confirm at the farm, once paid, that you picked up the order (client, RF12)");
 
         orders.MapPost("/{id}/cancel", async Task<Ok<OrderResponse>> (string id, CancelOrderBody? body, OrdersService.OrdersServiceClient client, CancellationToken ct) =>
             {

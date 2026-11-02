@@ -13,6 +13,7 @@ service OrdersService {
   rpc ListOrders (ListOrdersRequest) returns (ListOrdersResponse);
   rpc ListMyOrders (ListMyOrdersRequest) returns (ListOrdersResponse);
   rpc UpdateOrderStatus (UpdateOrderStatusRequest) returns (OrderInfo);
+  rpc ConfirmPickup (ConfirmPickupRequest) returns (OrderInfo);
   rpc CancelOrder (CancelOrderRequest) returns (OrderInfo);
 }
 
@@ -96,6 +97,11 @@ message UpdateOrderStatusRequest {
   string id = 1;
   OrderStatusProto new_status = 2;
   optional int32 expected_version = 3;
+}
+
+message ConfirmPickupRequest {
+  string id = 1;
+  optional int32 expected_version = 2;
 }
 
 message CancelOrderRequest {
