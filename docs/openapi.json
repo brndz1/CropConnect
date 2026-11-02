@@ -11,6 +11,36 @@
     }
   ],
   "paths": {
+    "/api/auth/change-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Change your own password; returns a new token, as the old ones stop working",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/farms/{farmId}/reviews": {
       "get": {
         "tags": [
@@ -100,7 +130,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Register as a client or farm manager (RF01, RF02)",
+        "summary": "Register as a client or farm manager, with first and last name (RF01, RF02)",
         "requestBody": {
           "content": {
             "application/json": {
@@ -118,6 +148,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RegisteredResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
                 }
               }
             }
@@ -151,6 +191,98 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/auth/verify-email": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Confirm the email address with the token from the verification email",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/auth/resend-verification": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Send the verification email again (at most once a minute)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/api/auth/forgot-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Email a link to choose a new password (valid for 1 hour)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Choose a new password with the token from the reset or invitation email",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -1937,6 +2069,21 @@
           }
         }
       },
+      "ChangePasswordBody": {
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          }
+        }
+      },
       "CreateFarmBody": {
         "required": [
           "name",
@@ -2139,6 +2286,17 @@
           null
         ]
       },
+      "EmailBody": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        }
+      },
       "EmailStatus": {
         "enum": [
           "Pending",
@@ -2228,6 +2386,53 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "HttpValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         }
       },
@@ -3091,7 +3296,9 @@
           "username",
           "email",
           "password",
-          "role"
+          "role",
+          "firstName",
+          "lastName"
         ],
         "type": "object",
         "properties": {
@@ -3106,6 +3313,12 @@
           },
           "role": {
             "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
           }
         }
       },
@@ -3116,6 +3329,21 @@
         "type": "object",
         "properties": {
           "userId": {
+            "type": "string"
+          }
+        }
+      },
+      "ResetPasswordBody": {
+        "required": [
+          "token",
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "newPassword": {
             "type": "string"
           }
         }
@@ -3236,6 +3464,17 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "TokenBody": {
+        "required": [
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
           }
         }
       },
@@ -3509,7 +3748,8 @@
           "username",
           "email",
           "role",
-          "isActive"
+          "isActive",
+          "emailVerified"
         ],
         "type": "object",
         "properties": {
@@ -3526,6 +3766,9 @@
             "type": "string"
           },
           "isActive": {
+            "type": "boolean"
+          },
+          "emailVerified": {
             "type": "boolean"
           }
         }
@@ -3547,13 +3790,13 @@
   ],
   "tags": [
     {
+      "name": "Auth"
+    },
+    {
       "name": "Reviews"
     },
     {
       "name": "Sensors"
-    },
-    {
-      "name": "Auth"
     },
     {
       "name": "Users"
