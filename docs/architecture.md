@@ -29,7 +29,7 @@ flowchart LR
     mq --> notif
 
     sensors -- HTTPS --> meteo([Open-Meteo])
-    notif -- HTTP --> mail([Mailpit / Mailtrap])
+    notif -- "HTTP / SMTP" --> mail([Mailpit / Brevo])
 
     auth --- authdb[(auth_db)]
     users --- usersdb[(users_db)]

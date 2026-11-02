@@ -7,9 +7,6 @@ public enum EmailProvider
     // Local mail catcher used in development and Docker Compose (no account needed).
     Mailpit = 1,
 
-    // Mailtrap Email API: real delivery, or a Mailtrap sandbox inbox when SandboxInboxId is set.
-    Mailtrap = 2,
-
     // Any SMTP server with a login, e.g. Brevo's relay (smtp-relay.brevo.com:587).
     Smtp = 3
 }
@@ -58,8 +55,6 @@ public sealed class EmailOptions
 
     public MailpitOptions Mailpit { get; set; } = new();
 
-    public MailtrapOptions Mailtrap { get; set; } = new();
-
     public SmtpOptions Smtp { get; set; } = new();
 }
 
@@ -67,14 +62,6 @@ public sealed class MailpitOptions
 {
     [Required]
     public string BaseUrl { get; set; } = "http://localhost:8025/";
-}
-
-public sealed class MailtrapOptions
-{
-    public string ApiToken { get; set; } = string.Empty;
-
-    // Set to deliver into a Mailtrap sandbox inbox instead of real recipients.
-    public long? SandboxInboxId { get; set; }
 }
 
 public sealed class SmtpOptions

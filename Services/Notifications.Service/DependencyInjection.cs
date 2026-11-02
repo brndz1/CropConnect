@@ -107,30 +107,16 @@ public static class DependencyInjection
             .BindConfiguration(EmailOptions.SectionName)
             .ValidateDataAnnotations()
             .Validate(
-                email => email.Provider != EmailProvider.Mailtrap || !string.IsNullOrWhiteSpace(email.Mailtrap.ApiToken),
-                "Email:Mailtrap:ApiToken is required when the email provider is Mailtrap.")
-            .Validate(
                 email => email.Provider != EmailProvider.Smtp || !string.IsNullOrWhiteSpace(email.Smtp.Host),
                 "Email:Smtp:Host is required when the email provider is Smtp.")
             .ValidateOnStart();
 
-        // The provider is chosen once at startup; both senders are typed HTTP clients.
+        // The provider is chosen once at startup; Mailpit's sender is a typed HTTP client.
         var provider = configuration.GetSection(EmailOptions.SectionName).GetValue(nameof(EmailOptions.Provider), EmailProvider.Mailpit);
 
         if (provider == EmailProvider.Smtp)
         {
             services.AddSingleton<IEmailSender, SmtpEmailSender>();
-        }
-        else if (provider == EmailProvider.Mailtrap)
-        {
-            services.AddHttpClient<IEmailSender, MailtrapEmailSender>((sp, client) =>
-            {
-                var email = sp.GetRequiredService<IOptions<EmailOptions>>().Value;
-                client.BaseAddress = new Uri(email.Mailtrap.SandboxInboxId is null
-                    ? MailtrapEmailSender.SendingBaseUrl
-                    : MailtrapEmailSender.SandboxBaseUrl);
-                client.Timeout = email.Timeout;
-            });
         }
         else
         {
