@@ -6,9 +6,13 @@ the running gateway serves it at `/openapi/v1.json` and an interactive reference
 
 ## Authentication
 
-1. `POST /api/auth/register` (role `Client` or `Manager`) and `POST /api/auth/login` return a JWT valid for 60 minutes.
+1. `POST /api/auth/register` (role `Client` or `Manager`, with `firstName` and `lastName`) creates the account and its
+   profile and emails a verification link. `POST /api/auth/login` returns a JWT valid for 60 minutes once the email is
+   confirmed (403 before that); accounts an administrator creates are already confirmed.
 2. Send it as `Authorization: Bearer <token>`. The gateway rejects a missing, invalid or expired token, and the token
    of a deactivated account within 15 seconds; the owning service then checks the role and ownership.
+3. A password change or reset makes the tokens issued before it stop working; `change-password` returns a new one.
+   `resend-verification` and `forgot-password` always answer 202, so they don't reveal which emails have an account.
 
 Roles: **Client** buys, **Manager** runs farms, **Admin** manages users, farms and thresholds. The development
 administrator is `admin@cropconnect.test`.
@@ -47,8 +51,13 @@ surprise basket contents), **Required** needs one.
 
 | Method | Path | Description | Token |
 |---|---|---|---|
-| POST | `/api/auth/register` | Register as a client or farm manager (RF01, RF02) | Public |
+| POST | `/api/auth/register` | Register as a client or farm manager, with first and last name (RF01, RF02) | Public |
 | POST | `/api/auth/login` | Log in and get a JWT for the other endpoints (RF01) | Public |
+| POST | `/api/auth/verify-email` | Confirm the email address with the token from the verification email | Public |
+| POST | `/api/auth/resend-verification` | Send the verification email again (at most once a minute) | Public |
+| POST | `/api/auth/forgot-password` | Email a link to choose a new password (valid for 1 hour) | Public |
+| POST | `/api/auth/reset-password` | Choose a new password with the token from the reset or invitation email | Public |
+| POST | `/api/auth/change-password` | Change your own password; returns a new token, as the old ones stop working | Required |
 
 ### Users
 
