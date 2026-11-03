@@ -1,4 +1,3 @@
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -13,6 +12,7 @@ public static class SecurityServiceCollectionExtensions
         services.AddOptions<JwtOptions>()
             .BindConfiguration(JwtOptions.SectionName)
             .ValidateDataAnnotations()
+            .Validate(jwt => JwtSigningKeys.IsValidPublicKey(jwt.PublicKey), "JwtSettings:PublicKey is not an RSA public key of at least 2048 bits.")
             .ValidateOnStart();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
@@ -30,8 +30,8 @@ public static class SecurityServiceCollectionExtensions
                     ValidateAudience = true,
                     ValidAudience = jwt.Audience,
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Secret)),
-                    ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+                    IssuerSigningKey = JwtSigningKeys.PublicSecurityKey(jwt.PublicKey),
+                    ValidAlgorithms = [SecurityAlgorithms.RsaSha256],
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.FromSeconds(30)
                 };

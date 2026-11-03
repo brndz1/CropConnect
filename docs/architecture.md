@@ -54,6 +54,9 @@ flowchart LR
 
 ## Communication
 
+- **Tokens (RS256).** Auth signs the JWTs with an RSA private key that only it has; the gateway and the services check
+  them with the public key, so a compromised service cannot issue tokens. Generate a pair with
+  `dotnet run deploy/new-jwt-keys.cs`; compose.yaml and the Development settings carry a development-only pair.
 - **North-south (REST).** The gateway validates the JWT, checks with Auth that the account is still active (cached
   for 15 s), and forwards the call to the owning service over gRPC with the caller's token and a 15 s deadline. gRPC
   status codes come back as HTTP problem details (see the [REST API](api.md)).

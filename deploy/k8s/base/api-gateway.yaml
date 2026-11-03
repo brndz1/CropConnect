@@ -28,9 +28,9 @@ spec:
           env:
             - name: OTEL_SERVICE_NAME
               value: api-gateway
-            - name: JwtSettings__Secret
+            - name: JwtSettings__PublicKey
               valueFrom:
-                secretKeyRef: { name: cropconnect-secrets, key: JWT_SECRET }
+                secretKeyRef: { name: cropconnect-secrets, key: JWT_PUBLIC_KEY }
             # Creates the profile of a newly registered user on Users.Service.
             - name: Downstream__ApiKey
               valueFrom:

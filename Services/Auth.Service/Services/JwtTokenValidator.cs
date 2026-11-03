@@ -1,6 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Auth.Service.Services;
@@ -18,7 +17,7 @@ public class JwtTokenValidator
     public TokenValidationParameters CreateParameters()
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret not configured.");
+        var publicKey = jwtSettings["PublicKey"] ?? throw new InvalidOperationException("JwtSettings:PublicKey is not configured.");
 
         return new TokenValidationParameters
         {
@@ -27,8 +26,8 @@ public class JwtTokenValidator
             ValidateAudience = true,
             ValidAudience = jwtSettings["Audience"],
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-            ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+            IssuerSigningKey = JwtSigningKeys.PublicSecurityKey(publicKey),
+            ValidAlgorithms = [SecurityAlgorithms.RsaSha256],
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30)
         };

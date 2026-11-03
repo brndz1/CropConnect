@@ -8,7 +8,8 @@ the running gateway serves it at `/openapi/v1.json` and an interactive reference
 
 1. `POST /api/auth/register` (role `Client` or `Manager`, with `firstName` and `lastName`) creates the account and its
    profile and emails a verification link. `POST /api/auth/login` returns a JWT valid for 60 minutes once the email is
-   confirmed (403 before that); accounts an administrator creates are already confirmed.
+   confirmed (403 before that); accounts an administrator creates are already confirmed. It is signed with RS256 by
+   Auth.Service, and the gateway and the services verify it with the public key.
 2. Send it as `Authorization: Bearer <token>`. The gateway rejects a missing, invalid or expired token, and the token
    of a deactivated account within 15 seconds; the owning service then checks the role and ownership.
 3. A password change or reset makes the tokens issued before it stop working; `change-password` returns a new one.
