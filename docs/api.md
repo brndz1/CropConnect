@@ -7,11 +7,17 @@ the running gateway serves it at `/openapi/v1.json` and an interactive reference
 ## Authentication
 
 1. `POST /api/auth/register` (role `Client` or `Manager`, with `firstName` and `lastName`) creates the account and its
-   profile and emails a verification link. `POST /api/auth/login` returns a JWT valid for 60 minutes once the email is
-   confirmed (403 before that); accounts an administrator creates are already confirmed.
+   profile and emails a verification link. `POST /api/auth/login` returns a JWT valid for 15 minutes (`expiresIn`, in
+   seconds) and a refresh token once the email is confirmed (403 before that); accounts an administrator creates are
+   already confirmed. The JWT is signed with RS256 by Auth.Service, and the gateway and the services verify it with the
+   public key.
 2. Send it as `Authorization: Bearer <token>`. The gateway rejects a missing, invalid or expired token, and the token
    of a deactivated account within 15 seconds; the owning service then checks the role and ownership.
 3. A password change or reset makes the tokens issued before it stop working; `change-password` returns a new one.
+4. Before the JWT expires, `POST /api/auth/refresh` with the refresh token returns a new JWT and a new refresh token.
+   Each refresh token works once (rotation): presenting a used one ends that whole session, as it means it was copied.
+   A session lasts 7 days without being used. `POST /api/auth/logout` ends it, and a password change, a reset or a
+   deactivation ends every session of the account.
    `resend-verification` and `forgot-password` always answer 202, so they don't reveal which emails have an account.
 
 Roles: **Client** buys, **Manager** runs farms, **Admin** manages users, farms and thresholds. The development
@@ -24,6 +30,9 @@ administrator is `admin@cropconnect.test`.
   `{ "items": [...], "totalCount", "page", "pageSize" }`.
 - Updates of farms, schedules, products, orders and thresholds carry an `expectedVersion` (it may be `null` to skip
   the check); a stale one is a 409.
+- Rate limits (fixed windows, counted in Redis so every gateway replica shares them): 300 calls a minute per user, or
+  per client IP without a token, and 10 login attempts per account every 15 minutes. Each response has
+  `RateLimit-Limit` and `RateLimit-Remaining`; over the limit it is a 429 with `Retry-After`.
 - Errors are RFC 9457 problem details (`application/problem+json`):
 
   ```json
@@ -38,6 +47,7 @@ administrator is `admin@cropconnect.test`.
   | 404 | Not found (also used for someone else's notification, so it is not revealed) |
   | 409 | Already exists, or modified by someone else (stale version) |
   | 422 | Business rule (insufficient stock, order not in the right status, expired basket...) |
+  | 429 | Rate limit: wait the seconds in `Retry-After` |
   | 503 | A downstream service is unavailable or too slow; the detail is not exposed |
 
 ## Endpoints
@@ -52,7 +62,9 @@ surprise basket contents), **Required** needs one.
 | Method | Path | Description | Token |
 |---|---|---|---|
 | POST | `/api/auth/register` | Register as a client or farm manager, with first and last name (RF01, RF02) | Public |
-| POST | `/api/auth/login` | Log in and get a JWT for the other endpoints (RF01) | Public |
+| POST | `/api/auth/login` | Log in and get a JWT for the other endpoints, and a refresh token (RF01) | Public |
+| POST | `/api/auth/refresh` | Get a new JWT with the refresh token; the refresh token is replaced and can only be used once | Public |
+| POST | `/api/auth/logout` | End the session: its refresh token stops working | Public |
 | POST | `/api/auth/verify-email` | Confirm the email address with the token from the verification email | Public |
 | POST | `/api/auth/resend-verification` | Send the verification email again (at most once a minute) | Public |
 | POST | `/api/auth/forgot-password` | Email a link to choose a new password (valid for 1 hour) | Public |

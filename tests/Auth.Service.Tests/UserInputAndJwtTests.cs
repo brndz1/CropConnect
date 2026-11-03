@@ -84,9 +84,9 @@ public sealed class UserInputAndJwtTests
     }
 
     [Fact]
-    public void Token_signed_with_another_secret_is_rejected()
+    public void Token_signed_with_another_key_is_rejected()
     {
-        var token = TestJwt.Generator(secret: "AnotherSecretKeyThatIsLongEnough-9876543210").GenerateToken(Ana);
+        var token = TestJwt.Generator(TestKeyPair.Create()).GenerateToken(Ana);
 
         Assert.Null(TestJwt.Validator().Validate(token));
     }
@@ -95,6 +95,30 @@ public sealed class UserInputAndJwtTests
     public void Expired_token_is_rejected()
     {
         var token = TestJwt.Generator(expirationMinutes: -5).GenerateToken(Ana);
+
+        Assert.Null(TestJwt.Validator().Validate(token));
+    }
+
+    [Fact]
+    public void Token_is_signed_with_RS256_and_names_its_key()
+    {
+        var token = new JwtSecurityTokenHandler().ReadJwtToken(TestJwt.Generator().GenerateToken(Ana));
+
+        Assert.Equal("RS256", token.Header.Alg);
+        Assert.False(string.IsNullOrEmpty(token.Header.Kid));
+    }
+
+    // A token signed with HMAC using the public key as the secret (algorithm confusion) must not pass.
+    [Fact]
+    public void Token_signed_with_HS256_is_rejected()
+    {
+        var key = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(TestJwt.Keys.PublicKey));
+        var token = new JwtSecurityTokenHandler().WriteToken(new JwtSecurityToken(
+            "CropConnect.Auth",
+            "CropConnect.Clients",
+            [new System.Security.Claims.Claim(JwtRegisteredClaimNames.Sub, Ana.Id.ToString())],
+            expires: DateTime.UtcNow.AddMinutes(5),
+            signingCredentials: new Microsoft.IdentityModel.Tokens.SigningCredentials(key, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256)));
 
         Assert.Null(TestJwt.Validator().Validate(token));
     }

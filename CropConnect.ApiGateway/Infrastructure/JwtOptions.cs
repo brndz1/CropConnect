@@ -6,9 +6,9 @@ public sealed class JwtOptions
 {
     public const string SectionName = "JwtSettings";
 
+    // The RSA public key that verifies the RS256 signature (see JwtSigningKeys); only Auth.Service has the private one.
     [Required]
-    [MinLength(32)]
-    public string Secret { get; set; } = string.Empty;
+    public string PublicKey { get; set; } = string.Empty;
 
     [Required]
     public string Issuer { get; set; } = string.Empty;

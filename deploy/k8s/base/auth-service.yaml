@@ -35,9 +35,13 @@ spec:
           env:
             - name: OTEL_SERVICE_NAME
               value: auth-service
-            - name: JwtSettings__Secret
+            # The only service with the private key: it is the one that signs the tokens (RS256).
+            - name: JwtSettings__PrivateKey
               valueFrom:
-                secretKeyRef: { name: cropconnect-secrets, key: JWT_SECRET }
+                secretKeyRef: { name: cropconnect-secrets, key: JWT_PRIVATE_KEY }
+            - name: JwtSettings__PublicKey
+              valueFrom:
+                secretKeyRef: { name: cropconnect-secrets, key: JWT_PUBLIC_KEY }
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef: { name: cropconnect-secrets, key: POSTGRES_USER }
@@ -47,7 +51,7 @@ spec:
             - name: ConnectionStrings__AuthDb
               value: Host=postgres;Database=auth_db;Username=$(POSTGRES_USER);Password=$(POSTGRES_PASSWORD)
             - name: JwtSettings__ExpirationMinutes
-              value: "60"
+              value: "15"
             - name: RabbitMq__UserName
               valueFrom:
                 secretKeyRef: { name: cropconnect-secrets, key: RABBITMQ_USER }

@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Auth.Service.Data;
 using Auth.Service.Services;
 using Microsoft.Data.Sqlite;
@@ -24,24 +25,35 @@ public sealed class TestDatabase : IDisposable
     public void Dispose() => _connection.Dispose();
 }
 
+// An RSA key pair made for the test run, like the one Auth.Service signs with (RS256).
+public sealed record TestKeyPair(string PrivateKey, string PublicKey)
+{
+    public static TestKeyPair Create()
+    {
+        using var rsa = RSA.Create(2048);
+        return new(Convert.ToBase64String(rsa.ExportPkcs8PrivateKey()), Convert.ToBase64String(rsa.ExportSubjectPublicKeyInfo()));
+    }
+}
+
 public static class TestJwt
 {
-    public const string Secret = "UnitTestSecretKeyThatIsLongEnough-0123456789";
+    public static readonly TestKeyPair Keys = TestKeyPair.Create();
 
-    public static IConfiguration Settings(string secret = Secret, int expirationMinutes = 60) =>
+    public static IConfiguration Settings(TestKeyPair? keys = null, int expirationMinutes = 60) =>
         new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["JwtSettings:Secret"] = secret,
+                ["JwtSettings:PrivateKey"] = (keys ?? Keys).PrivateKey,
+                ["JwtSettings:PublicKey"] = (keys ?? Keys).PublicKey,
                 ["JwtSettings:Issuer"] = "CropConnect.Auth",
                 ["JwtSettings:Audience"] = "CropConnect.Clients",
                 ["JwtSettings:ExpirationMinutes"] = expirationMinutes.ToString()
             })
             .Build();
 
-    public static JwtTokenGenerator Generator(string secret = Secret, int expirationMinutes = 60) => new(Settings(secret, expirationMinutes));
+    public static JwtTokenGenerator Generator(TestKeyPair? keys = null, int expirationMinutes = 60) => new(Settings(keys, expirationMinutes));
 
-    public static JwtTokenValidator Validator(string secret = Secret) => new(Settings(secret));
+    public static JwtTokenValidator Validator(TestKeyPair? keys = null) => new(Settings(keys));
 }
 
 // A clock the tests move forward, e.g. past a link's expiry or the resend cooldown.

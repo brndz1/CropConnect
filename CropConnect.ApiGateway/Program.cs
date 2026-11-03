@@ -12,7 +12,8 @@ builder.AddServiceDefaults();
 builder.Services
     .AddGatewayApi()
     .AddGatewaySecurity()
-    .AddDownstreamServices();
+    .AddDownstreamServices()
+    .AddGatewayRateLimiting(builder.Configuration);
 
 // Browser clients (e.g. the web front end) on other origins; none are allowed unless configured.
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -22,10 +23,13 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
     .AllowAnyMethod()));
 
 // The gateway is only reached through the web app's nginx (and Caddy on Azure), which says whether the client
-// used HTTPS; the OpenAPI document needs it to give Scalar an https:// server address.
+// used HTTPS (the OpenAPI document needs it to give Scalar an https:// server address) and the client's IP (the rate
+// limit of anonymous calls). ForwardLimit is the number of proxies in front: only the addresses they appended are
+// trusted, so a client cannot pick its own IP with an X-Forwarded-For header.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor;
+    options.ForwardLimit = builder.Configuration.GetValue("ForwardedHeaders:ForwardLimit", 1);
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
@@ -41,6 +45,7 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors();
 app.UseAuthentication();
+app.UseMiddleware<ApiRateLimitMiddleware>();
 app.UseAuthorization();
 
 #endregion

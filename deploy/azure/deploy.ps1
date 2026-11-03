@@ -16,13 +16,20 @@ if (-not (Test-Path $secretsFile)) {
         "POSTGRES_PASSWORD=$(New-Secret 24)"
         "RABBITMQ_USER=cropconnect"
         "RABBITMQ_PASSWORD=$(New-Secret 24)"
-        "JWT_SECRET=$(New-Secret 48)"
         "INTERNAL_API_KEY=$(New-Secret 32)"
         "ADMIN_USERNAME=admin"
         "ADMIN_EMAIL=admin@cropconnect.test"
         "ADMIN_PASSWORD=Admin-$(New-Secret 12)"
     ) | Set-Content -Path $secretsFile -Encoding ascii
     Write-Host "Generated $secretsFile (keep it: it holds the admin password)."
+}
+
+# The RS256 key pair of the JWTs, added once (also to a secrets.env from before the switch from HS256).
+if (-not (Select-String -Path $secretsFile -Pattern "^JWT_PRIVATE_KEY=" -Quiet)) {
+    $keys = Invoke-Checked { dotnet run (Join-Path $RepoRoot "deploy/new-jwt-keys.cs") }
+    $kept = Get-Content $secretsFile | Where-Object { $_ -notmatch "^JWT_SECRET=" }
+    @($kept) + @($keys) | Set-Content -Path $secretsFile -Encoding ascii
+    Write-Host "Added the JWT key pair to $secretsFile."
 }
 
 Write-Host "Building the images..."

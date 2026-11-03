@@ -19,10 +19,15 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("AuthDb")));
 builder.Services.AddHealthChecks().AddCheck<AuthDbHealthCheck>("auth-db");
 
-// Fail at startup rather than on the first login; the secret only ships in the Development settings.
-if (string.IsNullOrWhiteSpace(builder.Configuration["JwtSettings:Secret"]))
+// Fail at startup rather than on the first login; the development key pair only ships in the Development settings.
+if (!JwtSigningKeys.IsValidPrivateKey(builder.Configuration["JwtSettings:PrivateKey"]))
 {
-    throw new InvalidOperationException("JwtSettings:Secret is not configured.");
+    throw new InvalidOperationException("JwtSettings:PrivateKey is not an RSA private key of at least 2048 bits.");
+}
+
+if (!JwtSigningKeys.IsValidPublicKey(builder.Configuration["JwtSettings:PublicKey"]))
+{
+    throw new InvalidOperationException("JwtSettings:PublicKey is not an RSA public key of at least 2048 bits.");
 }
 
 builder.Services.AddSingleton(TimeProvider.System);
@@ -32,6 +37,7 @@ builder.Services.AddOptions<AccountOptions>()
     .ValidateDataAnnotations()
     .ValidateOnStart();
 builder.Services.AddScoped<AccountTokenService>();
+builder.Services.AddScoped<RefreshTokenService>();
 
 // Account events (verification, password reset, ...) reach Notifications.Service through an outbox and RabbitMQ.
 builder.Services.AddOptions<RabbitMqOptions>()

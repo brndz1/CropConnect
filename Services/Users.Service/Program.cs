@@ -20,7 +20,8 @@ builder.Services.AddDbContext<UsersDbContext>(options =>
 builder.Services.AddHealthChecks().AddCheck<UsersDbHealthCheck>("users-db");
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var jwtSecret = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret not configured.");
+// Only the public key: the services can check a token but not issue one.
+var jwtPublicKey = jwtSettings["PublicKey"] ?? throw new InvalidOperationException("JwtSettings:PublicKey is not configured.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -33,8 +34,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidAudience = jwtSettings["Audience"],
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+            IssuerSigningKey = JwtSigningKeys.PublicSecurityKey(jwtPublicKey),
+            ValidAlgorithms = [SecurityAlgorithms.RsaSha256],
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30)
         };

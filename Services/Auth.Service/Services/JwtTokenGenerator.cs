@@ -1,6 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using Auth.Service.Models;
 using Microsoft.IdentityModel.Tokens;
 
@@ -18,16 +17,19 @@ public class JwtTokenGenerator
         _configuration = configuration;
     }
 
+    // How long a token lasts; the clients get a new one with their refresh token before it expires.
+    public int ExpirationMinutes => int.Parse(_configuration["JwtSettings:ExpirationMinutes"] ?? "15");
+
     public string GenerateToken(User user)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret not configured.");
+        var privateKey = jwtSettings["PrivateKey"] ?? throw new InvalidOperationException("JwtSettings:PrivateKey is not configured.");
         var issuer = jwtSettings["Issuer"];
         var audience = jwtSettings["Audience"];
-        var expirationMinutes = int.Parse(jwtSettings["ExpirationMinutes"] ?? "60");
+        var expirationMinutes = ExpirationMinutes;
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        // RS256: only this service has the private key, the others verify the signature with the public one.
+        var credentials = new SigningCredentials(JwtSigningKeys.PrivateSecurityKey(privateKey), SecurityAlgorithms.RsaSha256);
 
         var claims = new[]
         {

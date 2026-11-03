@@ -18,6 +18,15 @@ service AuthService {
   rpc ResetPassword (ResetPasswordRequest) returns (google.protobuf.Empty);
   // The logged-in user (JWT); returns a new token, since the old ones stop being valid.
   rpc ChangePassword (ChangePasswordRequest) returns (LoginResponse);
+
+  // Login sessions: a new JWT for a refresh token, which is replaced by a new one each time (rotation).
+  rpc RefreshToken (RefreshTokenRequest) returns (LoginResponse);
+  // Ends the session the refresh token belongs to.
+  rpc Logout (RefreshTokenRequest) returns (google.protobuf.Empty);
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
 }
 
 message TokenRequest {
@@ -56,6 +65,9 @@ message LoginRequest {
 
 message LoginResponse {
   string token = 1;
+  string refresh_token = 2;
+  // Seconds until the token expires.
+  int32 expires_in = 3;
 }
 
 message ValidateTokenRequest {

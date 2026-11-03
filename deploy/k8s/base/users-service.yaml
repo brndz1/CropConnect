@@ -35,9 +35,9 @@ spec:
           env:
             - name: OTEL_SERVICE_NAME
               value: users-service
-            - name: JwtSettings__Secret
+            - name: JwtSettings__PublicKey
               valueFrom:
-                secretKeyRef: { name: cropconnect-secrets, key: JWT_SECRET }
+                secretKeyRef: { name: cropconnect-secrets, key: JWT_PUBLIC_KEY }
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef: { name: cropconnect-secrets, key: POSTGRES_USER }
