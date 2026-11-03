@@ -11,6 +11,7 @@ resources:
   - config.yaml
   - postgres.yaml
   - rabbitmq.yaml
+  - redis.yaml
   - tools.yaml
   - auth-service.yaml
   - users-service.yaml

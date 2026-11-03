@@ -42,9 +42,11 @@ Clients use the web app, or the REST API of the gateway, which translates each c
 | API reference (Scalar) | http://localhost:5000/scalar |
 | OpenAPI document | http://localhost:5000/openapi/v1.json |
 
-Log in with `POST /api/auth/login` and send the token as `Authorization: Bearer <token>`. A deactivated account
-is refused within 15 seconds (`JwtSettings__ActiveUserCacheDuration` on the gateway), without waiting for its token
-to expire.
+Log in with `POST /api/auth/login` and send the token as `Authorization: Bearer <token>`. The token lasts 15 minutes;
+`POST /api/auth/refresh` with the refresh token from the login gets the next one. A deactivated account is refused
+within 15 seconds (`JwtSettings__ActiveUserCacheDuration` on the gateway), without waiting for its token to expire.
+The gateway limits the calls per user or IP and the login attempts per account, with counters in Redis
+(`RateLimiting__*` settings).
 
 Only the gateway is reachable from other machines. For debugging and the tests, the services and the infrastructure
 are also published on their own ports, on `127.0.0.1` only:

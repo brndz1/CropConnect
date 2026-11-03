@@ -30,6 +30,9 @@ administrator is `admin@cropconnect.test`.
   `{ "items": [...], "totalCount", "page", "pageSize" }`.
 - Updates of farms, schedules, products, orders and thresholds carry an `expectedVersion` (it may be `null` to skip
   the check); a stale one is a 409.
+- Rate limits (fixed windows, counted in Redis so every gateway replica shares them): 300 calls a minute per user, or
+  per client IP without a token, and 10 login attempts per account every 15 minutes. Each response has
+  `RateLimit-Limit` and `RateLimit-Remaining`; over the limit it is a 429 with `Retry-After`.
 - Errors are RFC 9457 problem details (`application/problem+json`):
 
   ```json
@@ -44,6 +47,7 @@ administrator is `admin@cropconnect.test`.
   | 404 | Not found (also used for someone else's notification, so it is not revealed) |
   | 409 | Already exists, or modified by someone else (stale version) |
   | 422 | Business rule (insufficient stock, order not in the right status, expired basket...) |
+  | 429 | Rate limit: wait the seconds in `Retry-After` |
   | 503 | A downstream service is unavailable or too slow; the detail is not exposed |
 
 ## Endpoints

@@ -31,6 +31,9 @@ spec:
             - name: JwtSettings__PublicKey
               valueFrom:
                 secretKeyRef: { name: cropconnect-secrets, key: JWT_PUBLIC_KEY }
+            # Rate limit counters shared by the replicas (redis.yaml).
+            - name: ConnectionStrings__redis
+              value: redis:6379
             # Creates the profile of a newly registered user on Users.Service.
             - name: Downstream__ApiKey
               valueFrom:

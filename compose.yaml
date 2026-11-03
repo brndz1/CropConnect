@@ -237,7 +237,11 @@ services:
       Downstream__Orders: http://orders-service:8080
       Downstream__Sensors: http://sensors-service:8080
       Downstream__Notifications: http://notifications-service:8080
+      # Rate limit counters shared by every replica of the gateway.
+      ConnectionStrings__redis: redis:6379
     depends_on:
+      redis:
+        condition: service_healthy
       auth-service:
         condition: service_healthy
       users-service:
@@ -252,6 +256,17 @@ services:
         condition: service_healthy
 
   # The web app (http://localhost:3000); nginx serves it and forwards /api to the gateway.
+  # The gateway's rate limit counters; nothing to keep, so no volume.
+  redis:
+    image: redis:7.4-alpine
+    <<: *service
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   web:
     <<: *service
     build: web

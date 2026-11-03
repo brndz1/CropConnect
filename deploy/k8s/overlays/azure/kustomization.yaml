@@ -48,6 +48,10 @@ patches:
       - op: add
         path: /data/Email__SkipReservedDomains
         value: "true"
+      # Two proxies before the gateway (Caddy, then nginx): the client IP for the rate limit is the one Caddy saw.
+      - op: add
+        path: /data/ForwardedHeaders__ForwardLimit
+        value: "2"
   # Caddy is the public entry point (HTTPS), so the web app stays inside the cluster.
   - target: { kind: Service, name: web }
     patch: |

@@ -66,6 +66,22 @@ public sealed class SessionTests
         Assert.Equal(HttpStatusCode.Unauthorized, (await GetAsync($"api/users/{user.Id}/profile", forged)).Status);
     }
 
+    // Against guessing a password: 10 attempts per account every 15 minutes, counted in Redis by every gateway replica.
+    [Fact]
+    public async Task Too_many_login_attempts_for_one_account_get_429()
+    {
+        var email = $"brute{Guid.NewGuid():N}"[..20] + "@e2e.test";
+
+        for (var i = 0; i < 10; i++)
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, (await PostAsync("api/auth/login", new { email, password = "Wrong-pass1" })).Status);
+        }
+
+        var refused = await PostAsync("api/auth/login", new { email, password = "Wrong-pass1" });
+        Assert.Equal(HttpStatusCode.TooManyRequests, refused.Status);
+        Assert.Equal("429", refused.Text("status"));
+    }
+
     private static string Base64UrlDecode(string value)
     {
         var padded = value.Replace('-', '+').Replace('_', '/');

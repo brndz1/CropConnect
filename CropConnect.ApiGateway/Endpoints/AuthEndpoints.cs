@@ -86,7 +86,8 @@ public static class AuthEndpoints
                 var response = await client.LoginAsync(new LoginRequest { Email = body.Email ?? "", Password = body.Password ?? "" }, cancellationToken: ct);
                 return TypedResults.Ok(ToTokenResponse(response));
             })
-            .WithSummary("Log in and get a JWT for the other endpoints, and a refresh token (RF01)");
+            .RequireLoginRateLimit()
+            .WithSummary("Log in and get a JWT for the other endpoints, and a refresh token (RF01); 10 attempts per account every 15 minutes");
 
         auth.MapPost("/refresh", async Task<Ok<TokenResponse>> (RefreshTokenBody body, AuthService.AuthServiceClient client, CancellationToken ct) =>
             {

@@ -1188,6 +1188,73 @@
               }
             }
           ]
+        },
+        {
+          "name": "Demasiadas tentativas de login: 429",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"pm-tentativas-{{runId}}@postman.test\",\n  \"password\": \"errada-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// As 10 tentativas permitidas por conta em 15 minutos; este pedido é a 11.ª.",
+                  "const email = `pm-tentativas-${pm.collectionVariables.get(\"runId\")}@postman.test`;",
+                  "for (let i = 0; i < 10; i++) {",
+                  "  pm.sendRequest({",
+                  "    url: pm.environment.replaceIn(\"{{baseUrl}}/api/auth/login\"),",
+                  "    method: \"POST\",",
+                  "    header: { \"Content-Type\": \"application/json\" },",
+                  "    body: { mode: \"raw\", raw: JSON.stringify({ email, password: \"errada-123\" }) },",
+                  "  }, () => {});",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 429\", () => pm.response.to.have.status(429));",
+                  "pm.test(\"Diz quando tentar de novo (Retry-After)\", () => {",
+                  "  pm.expect(Number(pm.response.headers.get(\"Retry-After\"))).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     },

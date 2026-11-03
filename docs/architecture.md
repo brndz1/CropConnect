@@ -60,6 +60,9 @@ flowchart LR
 - **North-south (REST).** The gateway validates the JWT, checks with Auth that the account is still active (cached
   for 15 s), and forwards the call to the owning service over gRPC with the caller's token and a 15 s deadline. gRPC
   status codes come back as HTTP problem details (see the [REST API](api.md)).
+- **Rate limiting.** The gateway counts each user's calls (or each client IP's, behind nginx and Caddy) and each
+  account's login attempts in Redis, so its replicas share the limits (see the [REST API](api.md)). If Redis is down
+  the calls go through unlimited rather than failing.
 - **East-west (gRPC).** Calls a user makes are authorized by each service from the forwarded JWT (roles in the `role`
   claim). Calls between services (stock reservation, farm and user lookups) use a shared internal API key in the
   `x-api-key` header instead, and those RPCs accept nothing else.

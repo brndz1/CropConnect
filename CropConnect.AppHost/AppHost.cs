@@ -23,6 +23,9 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq", rabbitUser, rabbitPassword)
     .WithManagementPlugin()
     .WithDataVolume("cropconnect-aspire-rabbitmq");
 
+// The gateway's rate limit counters, shared by its replicas.
+var redis = builder.AddRedis("redis");
+
 // Catches the notification emails; its web inbox is linked from the dashboard.
 var mailpit = builder.AddContainer("mailpit", "axllent/mailpit", "v1.27")
     .WithHttpEndpoint(targetPort: 8025, name: "http");
@@ -80,6 +83,8 @@ var gateway = builder.AddProject<Projects.CropConnect_ApiGateway>("apigateway")
     .WithEnvironment("Downstream__Sensors", sensors.GetEndpoint("http"))
     .WithEnvironment("Downstream__Notifications", notifications.GetEndpoint("http"))
     .WithHttpHealthCheck("/health")
+    .WithReference(redis)
+    .WaitFor(redis)
     .WaitFor(auth)
     .WaitFor(users)
     .WaitFor(farms)
