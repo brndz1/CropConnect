@@ -10,7 +10,7 @@ The web app (React, TypeScript and shadcn/ui) is in [web](web/README.md).
 ## Running with .NET Aspire
 
 For development, the Aspire AppHost starts every service as a project, with PostgreSQL (one database per
-service), RabbitMQ and Mailpit in containers, and opens the Aspire dashboard with their logs, distributed
+service), RabbitMQ, Redis and Mailpit in containers, and opens the Aspire dashboard with their logs, distributed
 traces and metrics:
 
 ```bash
@@ -27,7 +27,7 @@ dotnet run --project CropConnect.AppHost
 
 ## Running with Docker
 
-`compose.yaml` starts every service with PostgreSQL and RabbitMQ:
+`compose.yaml` starts every service with PostgreSQL, RabbitMQ and Redis:
 
 ```bash
 docker compose up -d --build
@@ -74,7 +74,9 @@ are also published on their own ports, on `127.0.0.1` only:
   and ports.
 - Every service exports its logs, distributed traces and metrics over OTLP to the standalone Aspire
   dashboard, as under Aspire. It has no login, so Compose only publishes it on `127.0.0.1`.
-- Data is kept in the `postgres-data` and `rabbitmq-data` volumes; `docker compose down -v` removes it.
+- Data is kept in the `postgres-data` and `rabbitmq-data` volumes; `docker compose down -v` removes it. Redis
+  only holds the gateway's rate limit counters, which matter for the current window alone, so it has no volume
+  and is not published.
 - Emails are caught by Mailpit: the notifications and the account emails (email verification, password reset,
   invitation, welcome, password changed, account deactivated or reactivated), whose links open the web app. To
   deliver them for real, set in `.env` `EMAIL_PROVIDER=Smtp` with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`,

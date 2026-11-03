@@ -1,7 +1,7 @@
 # Architecture
 
 CropConnect is a set of .NET 10 microservices. Clients only talk REST to the API gateway; the services talk gRPC to
-each other and exchange events through RabbitMQ. Each service owns its PostgreSQL database (section 5.1 of the report).
+each other and exchange events through RabbitMQ. Each service owns its PostgreSQL database (section 6.5.4 of the report).
 
 ```mermaid
 flowchart LR
@@ -17,6 +17,7 @@ flowchart LR
     end
 
     gw -- gRPC --> auth & users & farms & orders & sensors & notif
+    gw -- "rate limit counters" --> redis[(Redis)]
     orders -- "gRPC: reserve / confirm / release stock" --> farms
     sensors -- "gRPC: farm owner" --> farms
     notif -- "gRPC: farm name" --> farms
@@ -24,8 +25,9 @@ flowchart LR
 
     nodered([Node-RED sensors]) -- AMQP: sensors.readings --> mq{{RabbitMQ}}
     mq --> sensors
-    orders -- "AMQP: order events" --> mq
+    orders -- "AMQP: order and review events" --> mq
     sensors -- "AMQP: alert events" --> mq
+    auth -- "AMQP: account events" --> mq
     mq --> notif
 
     sensors -- HTTPS --> meteo([Open-Meteo])
@@ -43,13 +45,13 @@ flowchart LR
 
 | Service | Responsibility | Requirements |
 |---|---|---|
-| Auth.Service | Registration, login, JWT issue and validation, user accounts and roles | RF01-RF03 |
+| Auth.Service | Registration and email confirmation, login, JWT and refresh tokens, password recovery, user accounts and roles | RF01-RF03 |
 | Users.Service | Personal profile of each account | RF01 |
 | Farms.Service | Farms, pickup schedules, products and seasonal baskets, stock and its reservations | RF04-RF09, RF11 |
 | Orders.Service | Order life cycle and reviews; orchestrates the stock reservation | RF10-RF15 |
 | Sensors.Service | Readings, global thresholds, alerts with the rain forecast | RF04, RF16-RF18 |
 | Notifications.Service | Turns events into in-app notifications and emails | RF19-RF21 |
-| API Gateway | The only REST entry point: JWT validation, routing to gRPC, OpenAPI | RNF04 |
+| API Gateway | The only REST entry point: JWT validation, rate limiting, routing to gRPC, OpenAPI | RNF04 |
 | Web app | React front end for the three profiles, served by nginx, which forwards `/api` to the gateway ([web](../web/README.md)) | All the profiles' screens |
 
 ## Communication
@@ -66,7 +68,7 @@ flowchart LR
 - **East-west (gRPC).** Calls a user makes are authorized by each service from the forwarded JWT (roles in the `role`
   claim). Calls between services (stock reservation, farm and user lookups) use a shared internal API key in the
   `x-api-key` header instead, and those RPCs accept nothing else.
-- **Events (RabbitMQ).** Order and alert events go to the `cropconnect.events` topic exchange; Node-RED publishes
+- **Events (RabbitMQ).** Order, review, alert and account events go to the `cropconnect.events` topic exchange; Node-RED publishes
   readings to `sensors.readings`. See [Messaging](messaging.md).
 
 ## Main flows
@@ -115,8 +117,8 @@ one transaction → Notifications tells the farm owner.
 
 | Mechanism | Where | What it guarantees |
 |---|---|---|
-| Transactional outbox | Orders, Sensors | An event is saved with the change that caused it and published later, at least once; a broker outage loses nothing |
-| Mandatory publishing | Orders, Sensors | An event no queue can receive yet stays in the outbox instead of being dropped |
+| Transactional outbox | Orders, Sensors, Auth | An event is saved with the change that caused it and published later, at least once; a broker outage loses nothing |
+| Mandatory publishing | Orders, Sensors, Auth | An event no queue can receive yet stays in the outbox instead of being dropped |
 | Idempotent consumers | Sensors (`MessageId`), Notifications (`SourceEventId` + recipient) | A redelivered message has no second effect |
 | Retries, then dead-letter | Sensors, Notifications | Invalid messages go straight to a dead-letter queue; other failures are retried up to 60 times (about 5 min) |
 | Email retries with backoff | Notifications | Emails survive a mail server outage (30 s, 1 min, 2 min... up to 5 attempts) |

@@ -9,12 +9,15 @@ One app serves the three profiles; the JWT's role picks the navigation and the h
 
 | Profile | Screens |
 |---|---|
-| Visitor | Home, catalog with search and filters, product and farm details, cart |
-| Client | The above, plus checkout (one order per farm), orders with their progress, cancelling, reviews, notifications, profile |
-| Manager | Dashboard (new orders, open alerts, low stock), orders by state with the status changes, products and baskets with stock adjustment, farms and pickup schedules, sensors (current readings, history chart with the limits, alerts) |
+| Visitor | Home, catalog with search and filters, product and farm details, cart, registration with email confirmation, login, password recovery |
+| Client | The above, plus checkout (one order per farm), orders with their progress, cancelling, reviews, notifications, profile with password change and logout |
+| Manager | Dashboard (new orders, open alerts, low stock), orders by state with the status changes, products and baskets with stock adjustment, farms and pickup schedules, reviews of the farms, sensors (current readings, history chart with the limits, alerts) |
 | Administrator | Users (search, role, deactivate), farms (activate and deactivate), sensor thresholds |
 
 The manager's and the administrator's screens and the charts are loaded only when needed (code splitting).
+
+The JWT lasts 15 minutes. The app renews it with the refresh token a minute before it expires, or when a call gets a
+401, and the open tabs take turns (Web Locks) so a refresh token is never used twice.
 
 ## Development
 
@@ -40,5 +43,5 @@ origin. Docker Compose publishes it on http://localhost:3000; on Kubernetes it i
 
 ## Not covered yet
 
-What the design report lists but the API does not offer: password recovery, product photos and categories, favourites,
+What the design report lists but the API does not offer: product photos and categories, favourites,
 the farm map, and sales reports. Notification and alert texts come from the backend in English.

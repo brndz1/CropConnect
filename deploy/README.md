@@ -5,7 +5,7 @@ with Kustomize (built into `kubectl`):
 
 | Folder | What it is |
 |---|---|
-| [`k8s/base`](k8s/base) | Every component in the `cropconnect` namespace: PostgreSQL and RabbitMQ (StatefulSets with persistent volumes), the six services, the gateway and the web app (Deployments), the Aspire dashboard, Mailpit, the Node-RED sensor simulator and the autoscalers |
+| [`k8s/base`](k8s/base) | Every component in the `cropconnect` namespace: PostgreSQL and RabbitMQ (StatefulSets with persistent volumes), Redis for the gateway's rate limits (no volume), the six services, the gateway and the web app (Deployments), the Aspire dashboard, Mailpit, the Node-RED sensor simulator and the autoscalers |
 | [`k8s/overlays/local`](k8s/overlays/local) | Docker Desktop's Kubernetes, with the development secrets; web app and API on http://localhost:5000 |
 | [`k8s/overlays/azure`](k8s/overlays/azure) | Azure Kubernetes Service (AKS), images from Azure Container Registry, random secrets |
 | [`azure`](azure) | PowerShell scripts that create, deploy, stop, start and delete the Azure environment |
@@ -14,7 +14,7 @@ with Kustomize (built into `kubectl`):
 
 - **Containers from official images.** The services build on `mcr.microsoft.com/dotnet/sdk` and `aspnet`; the
   web app builds on `node` and runs on `nginx`; the infrastructure uses the official `postgres`, `rabbitmq`,
-  `busybox`, `caddy` and `nodered/node-red` images and Microsoft's Aspire dashboard. Mailpit (`axllent/mailpit`), a
+  `redis`, `busybox`, `caddy` and `nodered/node-red` images and Microsoft's Aspire dashboard. Mailpit (`axllent/mailpit`), a
   development tool, is the only community image.
 - **One public entry point.** Locally the web app has the only `LoadBalancer` Service; its nginx serves the app and
   forwards `/api` to the gateway. On Azure, Caddy takes that place and puts HTTPS in front of nginx (see below). The gateway, the services, the databases and the tools are reachable

@@ -18,6 +18,17 @@ erDiagram
         text PasswordHash "BCrypt"
         varchar(20) Role "Client | Manager | Admin"
         bool IsActive
+        timestamptz EmailVerifiedAt "null until the link is opened"
+        timestamptz PasswordChangedAt "older tokens and sessions stop working"
+    }
+    AccountTokens {
+        uuid Id PK
+        uuid UserId FK
+        varchar(30) Purpose "EmailVerification | PasswordReset"
+        char(64) TokenHash UK "SHA-256 of the emailed link"
+        timestamptz CreatedAt
+        timestamptz ExpiresAt
+        timestamptz UsedAt "one use only"
     }
     RefreshTokens {
         uuid Id PK
@@ -28,10 +39,19 @@ erDiagram
         timestamptz UsedAt "replaced by the next one"
         timestamptz RevokedAt "logout or reuse"
     }
+    OutboxMessages {
+        uuid Id PK
+        varchar EventType
+        varchar RoutingKey "account.*"
+        jsonb Payload
+        timestamptz PublishedAt
+    }
     Users ||--o{ RefreshTokens : "sessions"
+    Users ||--o{ AccountTokens : "emailed links"
 ```
 
 The administrator account is created on startup from the `BootstrapAdmin` settings; nobody can register as one.
+The invitation an administrator sends uses a `PasswordReset` token: the new user sets the first password with it.
 
 ## Users.Service (`users_db`)
 
@@ -214,10 +234,10 @@ erDiagram
         uuid Id PK
         uuid SourceEventId "AMQP MessageId; unique with RecipientId"
         uuid RecipientId "Auth user"
-        varchar Type "OrderCreated | OrderStatusChanged | OrderCancelled | SensorAlert"
+        varchar Type "OrderCreated | OrderStatusChanged | OrderCancelled | SensorAlert | ReviewCreated"
         varchar Title
         varchar Message
-        uuid RelatedEntityId "order or alert"
+        uuid RelatedEntityId "order, review or alert"
         uuid FarmId
         timestamptz CreatedAt
         timestamptz ReadAt
@@ -228,6 +248,26 @@ erDiagram
         varchar EmailLastError
         varchar(55) TraceParent
     }
+    AccountEmails {
+        uuid Id PK
+        uuid SourceEventId UK "AMQP MessageId of the account event"
+        uuid UserId "Auth user"
+        varchar(50) Kind "EmailVerification | PasswordReset | Invitation | Welcome | PasswordChanged | AccountDeactivated | AccountReactivated"
+        varchar(254) ToAddress
+        varchar(100) ToName
+        varchar(200) Subject
+        varchar(4000) Text
+        timestamptz LinkExpiresAt
+        timestamptz CreatedAt
+        varchar(20) Status "Pending | Sent | Failed | Skipped"
+        int Attempts
+        timestamptz NextAttemptAt
+        timestamptz SentAt
+        varchar(1000) LastError
+        varchar(55) TraceParent
+    }
 ```
 
 Each notification is listed in the app and sent by email in the background; `EmailNextAttemptAt` drives the retries.
+The [account emails](messaging.md#account-events-cropconnectevents) are not shown in the app, only sent, with the
+same retries (`NextAttemptAt`). An email with a one-time link loses its text once it is sent, so the link is not kept.

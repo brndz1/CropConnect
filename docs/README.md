@@ -1,6 +1,6 @@
 # CropConnect documentation
 
-The documents promised in section 8 of the project report, describing the system as built.
+The technical documents that go with the project report, describing the system as built.
 
 | Document | Contents |
 |---|---|
