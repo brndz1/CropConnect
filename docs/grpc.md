@@ -17,6 +17,7 @@ Authorization column:
 | Service | RPC | Authorization | Called by |
 |---|---|---|---|
 | AuthService | `Register`, `Login` | Anonymous | Gateway |
+| AuthService | `RefreshToken`, `Logout` | Anonymous (the refresh token is the input) | Gateway |
 | AuthService | `ValidateToken` | Anonymous (the token is the input) | Gateway, to refuse deactivated accounts |
 | UserAccountsService | `GetUser` | JWT (own account, or admin) | Gateway |
 | UserAccountsService | `CreateUser`, `ListUsers`, `UpdateUser`, `SetUserActive` | Admin | Gateway |

@@ -17,13 +17,16 @@ public class JwtTokenGenerator
         _configuration = configuration;
     }
 
+    // How long a token lasts; the clients get a new one with their refresh token before it expires.
+    public int ExpirationMinutes => int.Parse(_configuration["JwtSettings:ExpirationMinutes"] ?? "15");
+
     public string GenerateToken(User user)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
         var privateKey = jwtSettings["PrivateKey"] ?? throw new InvalidOperationException("JwtSettings:PrivateKey is not configured.");
         var issuer = jwtSettings["Issuer"];
         var audience = jwtSettings["Audience"];
-        var expirationMinutes = int.Parse(jwtSettings["ExpirationMinutes"] ?? "60");
+        var expirationMinutes = ExpirationMinutes;
 
         // RS256: only this service has the private key, the others verify the signature with the public one.
         var credentials = new SigningCredentials(JwtSigningKeys.PrivateSecurityKey(privateKey), SecurityAlgorithms.RsaSha256);

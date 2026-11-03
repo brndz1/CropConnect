@@ -8,7 +8,7 @@ import { ErrorState, LoadingList } from "@/components/states"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { api, ApiError, errorMessage } from "@/lib/api"
+import { api, ApiError, errorMessage, type TokenPair } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
 import { passwordError } from "@/lib/passwords"
 import { roleLabel } from "@/lib/format"
@@ -142,15 +142,14 @@ function ProfileForm({ userId, profile }: { userId: string; profile: Profile | n
 
 // The old password is asked again; the API returns a new token because the current one stops working.
 function ChangePasswordForm() {
-  const { applyToken } = useAuth()
+  const { applyTokens } = useAuth()
   const [current, setCurrent] = useState("")
   const [next, setNext] = useState("")
   const [confirm, setConfirm] = useState("")
   const change = useMutation({
-    mutationFn: () =>
-      api.post<{ token: string }>("/api/auth/change-password", { currentPassword: current, newPassword: next }),
-    onSuccess: ({ token }) => {
-      applyToken(token)
+    mutationFn: () => api.post<TokenPair>("/api/auth/change-password", { currentPassword: current, newPassword: next }),
+    onSuccess: (pair) => {
+      applyTokens(pair)
       setCurrent("")
       setNext("")
       setConfirm("")

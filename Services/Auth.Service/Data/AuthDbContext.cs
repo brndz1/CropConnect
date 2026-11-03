@@ -13,6 +13,8 @@ public class AuthDbContext : DbContext
 
     public DbSet<AccountToken> AccountTokens => Set<AccountToken>();
 
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -47,6 +49,15 @@ public class AuthDbContext : DbContext
             entity.Property(t => t.TokenHash).HasMaxLength(FieldLimits.TokenHashLength).IsFixedLength().IsRequired();
             entity.HasIndex(t => t.TokenHash).IsUnique();
             entity.HasIndex(t => new { t.UserId, t.Purpose });
+            entity.HasOne<User>().WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.TokenHash).HasMaxLength(FieldLimits.TokenHashLength).IsFixedLength().IsRequired();
+            entity.HasIndex(t => t.TokenHash).IsUnique();
+            entity.HasIndex(t => t.FamilyId);
             entity.HasOne<User>().WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 

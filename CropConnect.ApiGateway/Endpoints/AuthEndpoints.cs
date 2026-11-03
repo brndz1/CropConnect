@@ -18,7 +18,10 @@ public static class AuthEndpoints
 
     public sealed record LoginBody(string Email, string Password);
 
-    public sealed record TokenResponse(string Token);
+    // The JWT (valid for ExpiresIn seconds) and the refresh token that gets the next one (see /api/auth/refresh).
+    public sealed record TokenResponse(string Token, string RefreshToken, int ExpiresIn);
+
+    public sealed record RefreshTokenBody(string RefreshToken);
 
     public sealed record UserAccountResponse(string Id, string Username, string Email, string Role, bool IsActive, bool EmailVerified);
 
@@ -81,9 +84,23 @@ public static class AuthEndpoints
         auth.MapPost("/login", async Task<Ok<TokenResponse>> (LoginBody body, AuthService.AuthServiceClient client, CancellationToken ct) =>
             {
                 var response = await client.LoginAsync(new LoginRequest { Email = body.Email ?? "", Password = body.Password ?? "" }, cancellationToken: ct);
-                return TypedResults.Ok(new TokenResponse(response.Token));
+                return TypedResults.Ok(ToTokenResponse(response));
             })
-            .WithSummary("Log in and get a JWT for the other endpoints (RF01)");
+            .WithSummary("Log in and get a JWT for the other endpoints, and a refresh token (RF01)");
+
+        auth.MapPost("/refresh", async Task<Ok<TokenResponse>> (RefreshTokenBody body, AuthService.AuthServiceClient client, CancellationToken ct) =>
+            {
+                var response = await client.RefreshTokenAsync(new RefreshTokenRequest { RefreshToken = body.RefreshToken ?? "" }, cancellationToken: ct);
+                return TypedResults.Ok(ToTokenResponse(response));
+            })
+            .WithSummary("Get a new JWT with the refresh token; the refresh token is replaced and can only be used once");
+
+        auth.MapPost("/logout", async Task<NoContent> (RefreshTokenBody body, AuthService.AuthServiceClient client, CancellationToken ct) =>
+            {
+                await client.LogoutAsync(new RefreshTokenRequest { RefreshToken = body.RefreshToken ?? "" }, cancellationToken: ct);
+                return TypedResults.NoContent();
+            })
+            .WithSummary("End the session: its refresh token stops working");
 
         auth.MapPost("/verify-email", async Task<NoContent> (TokenBody body, AuthService.AuthServiceClient client, CancellationToken ct) =>
             {
@@ -121,7 +138,7 @@ public static class AuthEndpoints
                 var response = await client.ChangePasswordAsync(
                     new ChangePasswordRequest { CurrentPassword = body.CurrentPassword ?? "", NewPassword = body.NewPassword ?? "" },
                     cancellationToken: ct);
-                return TypedResults.Ok(new TokenResponse(response.Token));
+                return TypedResults.Ok(ToTokenResponse(response));
             })
             .WithTags("Auth")
             .RequireAuthorization()
@@ -177,6 +194,9 @@ public static class AuthEndpoints
     private const int NameMaxLength = 100;
 
     private static bool ValidName(string? name) => name?.Trim() is { Length: > 0 and <= NameMaxLength };
+
+    private static TokenResponse ToTokenResponse(LoginResponse response) =>
+        new(response.Token, response.RefreshToken, response.ExpiresIn);
 
     private static UserAccountResponse ToResponse(UserAccountInfo user) =>
         new(user.Id, user.Username, user.Email, user.Role, user.IsActive, user.EmailVerified);

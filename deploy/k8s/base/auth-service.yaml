@@ -51,7 +51,7 @@ spec:
             - name: ConnectionStrings__AuthDb
               value: Host=postgres;Database=auth_db;Username=$(POSTGRES_USER);Password=$(POSTGRES_PASSWORD)
             - name: JwtSettings__ExpirationMinutes
-              value: "60"
+              value: "15"
             - name: RabbitMq__UserName
               valueFrom:
                 secretKeyRef: { name: cropconnect-secrets, key: RABBITMQ_USER }

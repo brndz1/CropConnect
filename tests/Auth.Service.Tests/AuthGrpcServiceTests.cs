@@ -25,10 +25,13 @@ public sealed partial class AuthGrpcServiceTests : IDisposable
 
     private AccountTokenService Tokens(AuthDbContext context) => new(context, _clock, Options.Create(_accountOptions));
 
+    private RefreshTokenService RefreshTokens(AuthDbContext context) =>
+        new(context, _clock, Options.Create(_accountOptions), NullLogger<RefreshTokenService>.Instance);
+
     private AuthGrpcService Auth()
     {
         var context = _database.CreateContext();
-        return new(context, TestJwt.Generator(), TestJwt.Validator(), Tokens(context), NullLogger<AuthGrpcService>.Instance);
+        return new(context, TestJwt.Generator(), TestJwt.Validator(), Tokens(context), RefreshTokens(context), NullLogger<AuthGrpcService>.Instance);
     }
 
     private UserAccountsGrpcService Accounts()

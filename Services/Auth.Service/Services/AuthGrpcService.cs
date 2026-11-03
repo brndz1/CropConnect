@@ -25,6 +25,7 @@ public class AuthGrpcService : Protos.AuthService.AuthServiceBase
     private readonly JwtTokenGenerator _jwtTokenGenerator;
     private readonly JwtTokenValidator _jwtTokenValidator;
     private readonly AccountTokenService _tokens;
+    private readonly RefreshTokenService _refreshTokens;
     private readonly ILogger<AuthGrpcService> _logger;
 
     public AuthGrpcService(
@@ -32,12 +33,14 @@ public class AuthGrpcService : Protos.AuthService.AuthServiceBase
         JwtTokenGenerator jwtTokenGenerator,
         JwtTokenValidator jwtTokenValidator,
         AccountTokenService tokens,
+        RefreshTokenService refreshTokens,
         ILogger<AuthGrpcService> logger)
     {
         _dbContext = dbContext;
         _jwtTokenGenerator = jwtTokenGenerator;
         _jwtTokenValidator = jwtTokenValidator;
         _tokens = tokens;
+        _refreshTokens = refreshTokens;
         _logger = logger;
     }
 
@@ -118,12 +121,33 @@ public class AuthGrpcService : Protos.AuthService.AuthServiceBase
             throw new ForbiddenException(EmailNotVerifiedMessage);
         }
 
-        var token = _jwtTokenGenerator.GenerateToken(user);
+        var session = Session(user, _refreshTokens.Issue(user.Id));
+        await _dbContext.SaveChangesAsync(context.CancellationToken);
 
         _logger.LogInformation("User {Email} logged in successfully.", user.Email);
 
-        return new LoginResponse { Token = token };
+        return session;
     }
+
+    public override async Task<LoginResponse> RefreshToken(RefreshTokenRequest request, ServerCallContext context)
+    {
+        var (user, refreshToken) = await _refreshTokens.RotateAsync(request.RefreshToken, context.CancellationToken);
+        return Session(user, refreshToken);
+    }
+
+    // Always succeeds, so it tells nothing about a token.
+    public override async Task<Empty> Logout(RefreshTokenRequest request, ServerCallContext context)
+    {
+        await _refreshTokens.RevokeAsync(request.RefreshToken, context.CancellationToken);
+        return Done;
+    }
+
+    private LoginResponse Session(User user, string refreshToken) => new()
+    {
+        Token = _jwtTokenGenerator.GenerateToken(user),
+        RefreshToken = refreshToken,
+        ExpiresIn = _jwtTokenGenerator.ExpirationMinutes * 60
+    };
 
     public override async Task<ValidateTokenResponse> ValidateToken(ValidateTokenRequest request, ServerCallContext context)
     {
@@ -264,11 +288,13 @@ public class AuthGrpcService : Protos.AuthService.AuthServiceBase
         var password = UserInput.Password(request.NewPassword);
         EnsureNewPassword(user, password);
 
+        // The other sessions end with the old password (see RefreshTokenService); this one gets a new one.
         SetPassword(user, password);
+        var session = Session(user, _refreshTokens.Issue(user.Id));
         await _dbContext.SaveChangesAsync(context.CancellationToken);
 
         _logger.LogInformation("User {UserId} changed their password.", user.Id);
-        return new LoginResponse { Token = _jwtTokenGenerator.GenerateToken(user) };
+        return session;
     }
 
     private static void EnsureNewPassword(User user, string password)

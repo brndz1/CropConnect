@@ -37,6 +37,7 @@ builder.Services.AddOptions<AccountOptions>()
     .ValidateDataAnnotations()
     .ValidateOnStart();
 builder.Services.AddScoped<AccountTokenService>();
+builder.Services.AddScoped<RefreshTokenService>();
 
 // Account events (verification, password reset, ...) reach Notifications.Service through an outbox and RabbitMQ.
 builder.Services.AddOptions<RabbitMqOptions>()

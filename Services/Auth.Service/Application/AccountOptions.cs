@@ -22,4 +22,8 @@ public sealed class AccountOptions
     // cannot be used to flood someone's inbox.
     [Range(typeof(TimeSpan), "00:00:00", "01:00:00")]
     public TimeSpan ResendCooldown { get; set; } = TimeSpan.FromMinutes(1);
+
+    // How long a login session lasts without being used; each refresh starts the period again.
+    [Range(typeof(TimeSpan), "01:00:00", "30.00:00:00")]
+    public TimeSpan RefreshTokenLifetime { get; set; } = TimeSpan.FromDays(7);
 }

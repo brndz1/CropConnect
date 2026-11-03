@@ -19,6 +19,16 @@ erDiagram
         varchar(20) Role "Client | Manager | Admin"
         bool IsActive
     }
+    RefreshTokens {
+        uuid Id PK
+        uuid UserId FK
+        uuid FamilyId "one login session"
+        char(64) TokenHash UK "SHA-256"
+        timestamptz ExpiresAt
+        timestamptz UsedAt "replaced by the next one"
+        timestamptz RevokedAt "logout or reuse"
+    }
+    Users ||--o{ RefreshTokens : "sessions"
 ```
 
 The administrator account is created on startup from the `BootstrapAdmin` settings; nobody can register as one.
