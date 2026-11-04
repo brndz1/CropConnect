@@ -1,7 +1,7 @@
 # Messaging
 
-RabbitMQ carries the two asynchronous flows of section 5.4: business events (Orders → Notifications) and IoT
-(Node-RED → Sensors → Notifications). Every exchange and queue is durable, every message persistent, and each service
+RabbitMQ carries the two asynchronous flows of section 6.4 of the report: business events (Orders and Auth →
+Notifications) and IoT (Node-RED → Sensors → Notifications). Every exchange and queue is durable, every message persistent, and each service
 declares what it uses on startup, so the start order does not matter.
 
 ```mermaid
@@ -11,8 +11,9 @@ flowchart LR
     rq --> sensors[Sensors.Service]
     rq -. rejected .-> rdlx[/sensors.readings.dead-letter<br/>fanout/] --> rdlq[(sensors-service.readings.dead-letter)]
 
-    orders[Orders.Service] -- "order.created<br/>order.status.changed<br/>order.cancelled" --> ex[/cropconnect.events<br/>topic/]
+    orders[Orders.Service] -- "order.created<br/>order.status.changed<br/>order.cancelled<br/>review.created" --> ex[/cropconnect.events<br/>topic/]
     sensors -- sensor.alert.raised --> ex
+    auth[Auth.Service] -- "account.* (7 events)" --> ex
     ex --> nq[(notifications-service.events)]
     nq --> notif[Notifications.Service]
     nq -. rejected .-> ndlx[/notifications-service.events.dead-letter<br/>fanout/] --> ndlq[(notifications-service.events.dead-letter)]
@@ -25,8 +26,8 @@ flowchart LR
 | `sensors.readings` | topic exchange | Sensors, Node-RED | Readings from the simulated sensors |
 | `sensors-service.readings` | queue | Sensors | Bound with `farm.#`; dead-letters to `sensors.readings.dead-letter` |
 | `sensors.readings.dead-letter` | fanout exchange | Sensors | → `sensors-service.readings.dead-letter` |
-| `cropconnect.events` | topic exchange | Orders, Sensors, Notifications | Domain events |
-| `notifications-service.events` | queue | Notifications | Bound with the four routing keys below; dead-letters to `notifications-service.events.dead-letter` |
+| `cropconnect.events` | topic exchange | Orders, Sensors, Auth, Notifications | Domain events |
+| `notifications-service.events` | queue | Notifications | Bound with the twelve routing keys below; dead-letters to `notifications-service.events.dead-letter` |
 | `notifications-service.events.dead-letter` | fanout exchange | Notifications | → queue of the same name |
 
 ## Messages
@@ -60,6 +61,7 @@ the W3C `traceparent` header carries the trace of the request that caused the ev
 | `order.created` | `OrderCreated` | Orders | Farm owner (RF19) |
 | `order.status.changed` | `OrderStatusChanged` | Orders | Customer for Confirmed and ReadyForPickup; farm owner for PickedUp, which the customer confirms (RF20) |
 | `order.cancelled` | `OrderCancelled` | Orders | The other party: the farm owner if the customer cancelled, otherwise the customer (RF20) |
+| `review.created` | `ReviewCreated` | Orders | Farm owner (RF15) |
 | `sensor.alert.raised` | `SensorAlertRaised` | Sensors | Farm owner (RF21) |
 
 ```json
@@ -75,6 +77,10 @@ the W3C `traceparent` header carries the trace of the request that caused the ev
 { "orderId": "…", "customerId": "…", "farmId": "…", "farmOwnerId": "…",
   "previousStatus": "pending", "reason": "Changed my mind", "cancelledByCustomer": true, "occurredAt": "…" }
 
+// review.created
+{ "reviewId": "…", "orderId": "…", "customerId": "…", "farmId": "…", "farmOwnerId": "…",
+  "rating": 5, "comment": "Batatas ótimas", "occurredAt": "…" }
+
 // sensor.alert.raised
 { "alertId": "…", "farmId": "…", "farmOwnerId": "…", "farmName": "Quinta do Vale",
   "type": "humidity", "value": 18.4, "minValue": 30, "maxValue": 80, "unit": "%",
@@ -85,6 +91,31 @@ the W3C `traceparent` header carries the trace of the request that caused the ev
 
 Each order transition of the state model (section 4.2) produces exactly one event: entering Pending is
 `order.created`, Confirmed / ReadyForPickup / PickedUp are `order.status.changed`, and Cancelled is `order.cancelled`.
+
+### Account events (`cropconnect.events`)
+
+Auth publishes them from its outbox, and Notifications turns each into an email to the account's own address (not
+an in-app notification). The first three carry a one-time link: the token travels only in the event and the email,
+and Auth stores just its SHA-256.
+
+| Routing key | When | Email |
+|---|---|---|
+| `account.email-verification.requested` | Registration, or a new verification email asked for | Link to confirm the address |
+| `account.password-reset.requested` | Forgotten password | Link to choose a new password |
+| `account.invited` | An administrator creates the account | Link to set the first password |
+| `account.email.verified` | The address was confirmed | Welcome |
+| `account.password.changed` | Password changed or reset | Warning, in case it was not the owner |
+| `account.deactivated` | An administrator deactivated the account | The account was deactivated |
+| `account.reactivated` | An administrator reactivated it | The account is active again |
+
+```json
+// with a link (the first three)
+{ "userId": "…", "email": "ana@example.com", "username": "ana", "role": "Client",
+  "token": "…", "expiresAt": "…", "occurredAt": "…" }
+
+// the others
+{ "userId": "…", "email": "ana@example.com", "username": "ana", "role": "Client", "occurredAt": "…" }
+```
 
 ## Delivery guarantees
 

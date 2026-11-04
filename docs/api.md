@@ -1,6 +1,6 @@
 # REST API
 
-The API gateway is the only entry point for clients (section 5.1). It translates each REST call to gRPC on the
+The API gateway is the only entry point for clients. It translates each REST call to gRPC on the
 owning service. The full contract, with every request and response schema, is the [OpenAPI document](openapi.json);
 the running gateway serves it at `/openapi/v1.json` and an interactive reference at `/scalar`.
 

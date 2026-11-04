@@ -255,7 +255,6 @@ services:
       notifications-service:
         condition: service_healthy
 
-  # The web app (http://localhost:3000); nginx serves it and forwards /api to the gateway.
   # The gateway's rate limit counters; nothing to keep, so no volume.
   redis:
     image: redis:7.4-alpine
@@ -267,6 +266,7 @@ services:
       timeout: 3s
       retries: 10
 
+  # The web app (http://localhost:3000); nginx serves it and forwards /api to the gateway.
   web:
     <<: *service
     build: web
