@@ -35,7 +35,7 @@ public sealed class NotificationIngestionServiceTests : IDisposable
     }
 
     private string OrderCreated() =>
-        $$"""{"orderId":"{{_orderId}}","customerId":"{{_customerId}}","farmId":"{{_farmId}}","farmOwnerId":"{{_ownerId}}","totalAmount":12.5,"itemCount":2,"occurredAt":"2026-05-01T10:00:00Z"}""";
+        $$"""{"orderId":"{{_orderId}}","customerId":"{{_customerId}}","farmId":"{{_farmId}}","farmOwnerId":"{{_ownerId}}","totalAmount":12.5,"itemCount":2,"items":[{"productId":"{{Guid.NewGuid()}}","productName":"Alface","quantity":5,"unitPrice":1.5},{"productId":"{{Guid.NewGuid()}}","productName":"Cenoura","quantity":1,"unitPrice":5.0}],"occurredAt":"2026-05-01T10:00:00Z"}""";
 
     private string StatusChanged(string newStatus) =>
         $$"""{"orderId":"{{_orderId}}","customerId":"{{_customerId}}","farmId":"{{_farmId}}","farmOwnerId":"{{_ownerId}}","previousStatus":"pending","newStatus":"{{newStatus}}","occurredAt":"2026-05-01T10:00:00Z"}""";

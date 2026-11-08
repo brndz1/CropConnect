@@ -67,7 +67,10 @@ the W3C `traceparent` header carries the trace of the request that caused the ev
 ```json
 // order.created
 { "orderId": "…", "customerId": "…", "farmId": "…", "farmOwnerId": "…",
-  "totalAmount": 12.5, "itemCount": 2, "occurredAt": "2026-10-30T10:00:00Z" }
+  "totalAmount": 12.5, "itemCount": 2,
+  "items": [ { "productId": "…", "productName": "Alface", "quantity": 5, "unitPrice": 1.5 },
+             { "productId": "…", "productName": "Cenoura", "quantity": 1, "unitPrice": 5.0 } ],
+  "occurredAt": "2026-10-30T10:00:00Z" }
 
 // order.status.changed (status: pending | confirmed | readyForPickup | pickedUp | cancelled)
 { "orderId": "…", "customerId": "…", "farmId": "…", "farmOwnerId": "…",

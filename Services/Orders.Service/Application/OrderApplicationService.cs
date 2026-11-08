@@ -99,6 +99,7 @@ public sealed class OrderApplicationService : IOrderApplicationService
                 order.FarmOwnerId,
                 order.TotalAmount,
                 order.Items.Count,
+                order.Items.Select(i => new OrderLineEvent(i.ProductId, i.ProductName, i.Quantity, i.UnitPrice)).ToList(),
                 now));
 
             await _dbContext.SaveChangesAsync(cancellationToken);
