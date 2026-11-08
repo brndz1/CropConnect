@@ -1,4 +1,5 @@
-# Build from the repository root, since the service references CropConnect.ServiceDefaults:
+# Build from the repository root, since the service references CropConnect.ServiceDefaults
+# and compiles the Farms contract as a client:
 #   docker build -f Services/Analytics.Ingestor/Dockerfile -t cropconnect/analytics-ingestor .
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
@@ -10,6 +11,7 @@ COPY Services/Analytics.Ingestor/Analytics.Ingestor.csproj Services/Analytics.In
 RUN dotnet restore Services/Analytics.Ingestor/Analytics.Ingestor.csproj
 
 COPY CropConnect.ServiceDefaults/ CropConnect.ServiceDefaults/
+COPY Services/Farms.Service/Protos/farms.proto Services/Farms.Service/Protos/
 COPY Services/Analytics.Ingestor/ Services/Analytics.Ingestor/
 RUN dotnet publish Services/Analytics.Ingestor/Analytics.Ingestor.csproj -c Release -o /app/publish --no-restore /p:UseAppHost=false
 

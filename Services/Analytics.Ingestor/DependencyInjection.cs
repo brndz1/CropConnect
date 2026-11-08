@@ -1,7 +1,10 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Analytics.Ingestor.Application;
+using Analytics.Ingestor.Catalog;
 using Analytics.Ingestor.Messaging;
 using Analytics.Ingestor.Storage;
+using Farms.Service.Protos;
 
 namespace Analytics.Ingestor;
 
@@ -42,6 +45,25 @@ public static class DependencyInjection
         services.AddSingleton<RabbitMqConnectionProvider>();
         services.AddHostedService<RawMessageConsumer>();
         services.AddHealthChecks().AddCheck<RabbitMqHealthCheck>("rabbitmq");
+
+        return services;
+    }
+
+    public static IServiceCollection AddIngestorCatalogSnapshots(this IServiceCollection services)
+    {
+        services.AddOptions<CatalogSnapshotOptions>()
+            .BindConfiguration(CatalogSnapshotOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddGrpcClient<FarmsService.FarmsServiceClient>((provider, options) =>
+            options.Address = new Uri(provider.GetRequiredService<IOptions<CatalogSnapshotOptions>>().Value.FarmsServiceUrl));
+        services.AddGrpcClient<ProductsService.ProductsServiceClient>((provider, options) =>
+            options.Address = new Uri(provider.GetRequiredService<IOptions<CatalogSnapshotOptions>>().Value.FarmsServiceUrl));
+
+        services.AddScoped<ICatalogReader, GrpcCatalogReader>();
+        services.AddScoped<CatalogSnapshotService>();
+        services.AddHostedService<CatalogSnapshotWorker>();
 
         return services;
     }

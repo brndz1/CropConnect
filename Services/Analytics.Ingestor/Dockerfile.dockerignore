@@ -3,6 +3,7 @@
 *
 !CropConnect.ServiceDefaults/
 !Services/Analytics.Ingestor/
+!Services/Farms.Service/Protos/farms.proto
 **/bin/
 **/obj/
 **/*.user

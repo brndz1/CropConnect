@@ -1,7 +1,8 @@
 using Analytics.Ingestor;
 
-// Lands the sensor readings and the domain events in MongoDB, as they arrived, for the analytics platform
-// (Databricks) to read. It only listens to the other services, so none of them depends on it.
+// Lands the sensor readings and the domain events in MongoDB, as they arrived, together with a daily snapshot of the
+// public catalog, for the analytics platform (Databricks) to read. It only reads from the other services, so none of
+// them depends on it.
 
 #region Services
 
@@ -11,7 +12,8 @@ builder.AddServiceDefaults();
 
 builder.Services
     .AddIngestorStorage()
-    .AddIngestorMessaging();
+    .AddIngestorMessaging()
+    .AddIngestorCatalogSnapshots();
 
 #endregion
 

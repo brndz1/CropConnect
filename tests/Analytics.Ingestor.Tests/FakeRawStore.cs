@@ -10,6 +10,8 @@ public sealed class FakeRawStore : IRawStore
 
     public List<BsonDocument> Events { get; } = [];
 
+    public List<BsonDocument> Snapshots { get; } = [];
+
     public Task<bool> InsertReadingAsync(BsonDocument reading, string messageId, CancellationToken cancellationToken)
     {
         if (Readings.Any(r => r["messageId"] == messageId))
@@ -31,4 +33,13 @@ public sealed class FakeRawStore : IRawStore
         Events.Add(domainEvent);
         return Task.FromResult(true);
     }
+
+    public Task InsertSnapshotAsync(IReadOnlyCollection<BsonDocument> documents, CancellationToken cancellationToken)
+    {
+        Snapshots.AddRange(documents);
+        return Task.CompletedTask;
+    }
+
+    public Task<DateTime?> GetLatestSnapshotTimeAsync(CancellationToken cancellationToken) =>
+        Task.FromResult(Snapshots.Count == 0 ? (DateTime?)null : Snapshots.Max(s => s["snapshotAt"].ToUniversalTime()));
 }
