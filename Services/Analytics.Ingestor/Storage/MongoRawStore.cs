@@ -124,34 +124,49 @@ public sealed class MongoRawStore : IRawStore
                 await CreateReadingsCollectionAsync(cancellationToken);
             }
 
-            // Creating an index that already exists does nothing.
-            await Readings.Indexes.CreateManyAsync(
-                [
-                    new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("messageId")),
-                    // Databricks copies what arrived since its last run (incremental extraction).
-                    new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("receivedAt"))
-                ],
-                cancellationToken);
+            var keys = Builders<BsonDocument>.IndexKeys;
 
-            await Events.Indexes.CreateManyAsync(
-                [
-                    new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("receivedAt")),
-                    new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("routingKey").Ascending("receivedAt"))
-                ],
-                cancellationToken);
+            // Databricks copies what arrived since its last run (incremental extraction), hence receivedAt.
+            await CreateMissingIndexesAsync(Readings, cancellationToken,
+                ("messageId_1", keys.Ascending("messageId")),
+                ("receivedAt_1", keys.Ascending("receivedAt")));
 
-            await Snapshots.Indexes.CreateManyAsync(
-                [
-                    new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("snapshotAt")),
-                    new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("entity").Ascending("entityId"))
-                ],
-                cancellationToken);
+            await CreateMissingIndexesAsync(Events, cancellationToken,
+                ("receivedAt_1", keys.Ascending("receivedAt")),
+                ("routingKey_1_receivedAt_1", keys.Ascending("routingKey").Ascending("receivedAt")));
+
+            await CreateMissingIndexesAsync(Snapshots, cancellationToken,
+                ("snapshotAt_1", keys.Ascending("snapshotAt")),
+                ("entity_1_entityId_1", keys.Ascending("entity").Ascending("entityId")));
 
             _ready = true;
         }
         finally
         {
             _setupLock.Release();
+        }
+    }
+
+    // Only the indexes missing by name are created. Asking again for an index that exists normally does nothing,
+    // but on a time-series collection MongoDB also compares how the request was written, and refuses one created
+    // by another client (the backfill script) whose fields came in another order.
+    private static async Task CreateMissingIndexesAsync(
+        IMongoCollection<BsonDocument> collection,
+        CancellationToken cancellationToken,
+        params (string Name, IndexKeysDefinition<BsonDocument> Keys)[] indexes)
+    {
+        var existing = (await (await collection.Indexes.ListAsync(cancellationToken)).ToListAsync(cancellationToken))
+            .Select(index => index["name"].AsString)
+            .ToHashSet();
+
+        var missing = indexes
+            .Where(index => !existing.Contains(index.Name))
+            .Select(index => new CreateIndexModel<BsonDocument>(index.Keys, new CreateIndexOptions { Name = index.Name }))
+            .ToList();
+
+        if (missing.Count > 0)
+        {
+            await collection.Indexes.CreateManyAsync(missing, cancellationToken);
         }
     }
 

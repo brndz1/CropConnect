@@ -394,12 +394,19 @@ def ensure_collections(database, retention_days):
             database.create_collection(READINGS, **options)
         except CollectionInvalid:
             pass
-    database[READINGS].create_index("messageId")
-    database[READINGS].create_index("receivedAt")
-    database[EVENTS].create_index("receivedAt")
-    database[EVENTS].create_index([("routingKey", 1), ("receivedAt", 1)])
-    database[SNAPSHOTS].create_index("snapshotAt")
-    database[SNAPSHOTS].create_index([("entity", 1), ("entityId", 1)])
+    # The ingestor's indexes, when it has not created them yet. Only the missing ones: on a time-series collection
+    # MongoDB refuses to "create" an existing index that another client wrote with its fields in another order.
+    indexes = {
+        READINGS: [[("messageId", 1)], [("receivedAt", 1)]],
+        EVENTS: [[("receivedAt", 1)], [("routingKey", 1), ("receivedAt", 1)]],
+        SNAPSHOTS: [[("snapshotAt", 1)], [("entity", 1), ("entityId", 1)]],
+    }
+    for name, keys_list in indexes.items():
+        existing = database[name].index_information()
+        for keys in keys_list:
+            index_name = "_".join(f"{field}_{order}" for field, order in keys)
+            if index_name not in existing:
+                database[name].create_index(keys, name=index_name)
 
 
 def insert(collection, documents, batch=5000):
