@@ -62,8 +62,10 @@ services:
 
   # The raw zone of the analytics platform: the analytics ingestor stores every reading and event here.
   # Published on 27018, so it does not clash with a MongoDB already running on the default port.
+  # 7.0, not 8.x: MongoDB 8's memory allocator crashes on Linux kernels 6.19 and newer (SERVER-121912), which the
+  # CI runners use; 7.0 has everything the ingestor needs (time-series collections, expireAfterSeconds).
   mongodb:
-    image: mongo:8.0
+    image: mongo:7.0
     restart: unless-stopped
     networks: [cropconnect]
     environment:

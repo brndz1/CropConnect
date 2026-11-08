@@ -27,7 +27,9 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq", rabbitUser, rabbitPassword)
 var redis = builder.AddRedis("redis");
 
 // The raw zone of the analytics platform: every reading and event, as the analytics ingestor received it.
+// 7.0, as in compose.yaml: MongoDB 8 does not start on Linux kernels 6.19 and newer (SERVER-121912).
 var analyticsDb = builder.AddMongoDB("mongodb")
+    .WithImageTag("7.0")
     .WithDataVolume("cropconnect-aspire-mongodb")
     .AddDatabase("AnalyticsDb", "cropconnect_raw");
 

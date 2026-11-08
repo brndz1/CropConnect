@@ -22,7 +22,8 @@ spec:
         fsGroup: 999
       containers:
         - name: mongodb
-          image: mongo:8.0
+          # 7.0: MongoDB 8 does not start on Linux kernels 6.19 and newer (SERVER-121912).
+          image: mongo:7.0
           # A small cache: the node is shared with the whole platform.
           args: ["--wiredTigerCacheSizeGB", "0.25"]
           ports:
