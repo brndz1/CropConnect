@@ -12,6 +12,7 @@ resources:
   - postgres.yaml
   - rabbitmq.yaml
   - redis.yaml
+  - mongodb.yaml
   - tools.yaml
   - auth-service.yaml
   - users-service.yaml
@@ -19,6 +20,7 @@ resources:
   - orders-service.yaml
   - sensors-service.yaml
   - notifications-service.yaml
+  - analytics-ingestor.yaml
   - api-gateway.yaml
   - web.yaml
   - sensor-simulator.yaml
