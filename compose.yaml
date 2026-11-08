@@ -73,11 +73,15 @@ services:
       - "127.0.0.1:${MONGO_PORT:-27018}:27017"
     volumes:
       - mongo-data:/data/db
+    # mongosh is a Node.js program that can take several seconds just to start on a busy machine (the CI runner
+    # while every service boots), and the first start also runs the image's init step and restarts mongod.
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      test: ["CMD", "mongosh", "--norc", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
-      timeout: 5s
+      timeout: 30s
       retries: 10
+      start_period: 120s
+      start_interval: 3s
 
   auth-service:
     <<: *service

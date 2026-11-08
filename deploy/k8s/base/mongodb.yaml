@@ -37,9 +37,10 @@ spec:
                 secretKeyRef: { name: cropconnect-secrets, key: MONGO_PASSWORD }
           readinessProbe:
             exec:
-              command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+              # mongosh (Node.js) alone can take several seconds to start on a small node.
+              command: ["mongosh", "--norc", "--quiet", "--eval", "db.adminCommand('ping').ok"]
             periodSeconds: 10
-            timeoutSeconds: 5
+            timeoutSeconds: 30
           livenessProbe:
             tcpSocket: { port: mongodb }
             initialDelaySeconds: 30
