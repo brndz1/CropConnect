@@ -69,6 +69,14 @@ public sealed class OrderApplicationServiceTests : IDisposable
         Assert.Equal(order.Id.ToString(), payload["orderId"]!.ToString());
         Assert.Equal(_stock.FarmOwnerId.ToString(), payload["farmOwnerId"]!.ToString());
         Assert.Equal(2, payload["itemCount"]!.GetValue<int>());
+
+        // The lines travel in the event too, with the merged quantities and the reserved prices.
+        var items = payload["items"]!.AsArray();
+        Assert.Equal(2, items.Count);
+        var lettuceLine = items.Single(i => i!["productId"]!.ToString() == lettuce.ToString())!;
+        Assert.Equal(5, lettuceLine["quantity"]!.GetValue<int>());
+        Assert.False(string.IsNullOrEmpty(lettuceLine["productName"]!.ToString()));
+        Assert.True(lettuceLine["unitPrice"]!.GetValue<decimal>() > 0);
     }
 
     [Fact]

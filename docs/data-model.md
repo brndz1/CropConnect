@@ -1,6 +1,7 @@
 # Data model
 
-Each service owns one PostgreSQL database and no service reads another's. References across services (a farm's
+Each service owns one PostgreSQL database and no service reads another's (the analytics ingestor's MongoDB is at the
+[end](#analyticsingestor-mongodb-cropconnect_raw)). References across services (a farm's
 `OwnerId`, an order's `ProductId`) are plain IDs, checked through gRPC rather than foreign keys. The schemas are
 created by each service's EF Core migrations.
 
@@ -271,3 +272,42 @@ erDiagram
 Each notification is listed in the app and sent by email in the background; `EmailNextAttemptAt` drives the retries.
 The [account emails](messaging.md#account-events-cropconnectevents) are not shown in the app, only sent, with the
 same retries (`NextAttemptAt`). An email with a one-time link loses its text once it is sent, so the link is not kept.
+
+## Analytics.Ingestor (MongoDB `cropconnect_raw`)
+
+The raw zone of the [analytics platform](analytics.md): documents as they arrived, not validated (schema-on-read).
+The collections and indexes are created by the ingestor on first use.
+
+| Collection | Kind | One document per | Indexes |
+|---|---|---|---|
+| `sensor_readings` | time series (`timeField` `timestamp`, `metaField` `meta`, granularity seconds) | Reading | `messageId`, `receivedAt` |
+| `domain_events` | normal | Event, `_id` = AMQP `MessageId` | `receivedAt`, `routingKey` + `receivedAt` |
+| `catalog_snapshots` | normal | Farm or product of a daily snapshot | `snapshotAt`, `entity` + `entityId` |
+
+```json
+// sensor_readings
+{ "timestamp": ISODate("2026-11-08T11:59:30Z"), "timestampSource": "payload",
+  "meta": { "farmId": "…", "sensorId": "sim-4eb12325", "type": "humidity" },
+  "messageId": "…", "routingKey": "farm.….humidity", "receivedAt": ISODate("…"), "traceParent": "00-…",
+  "payload": { /* the reading as Node-RED sent it */ } }
+
+// domain_events
+{ "_id": "…", "routingKey": "order.created", "eventType": "OrderCreated",
+  "publishedAt": ISODate("…"), "receivedAt": ISODate("…"), "traceParent": "00-…",
+  "payload": { /* the event as published, without personal data */ } }
+
+// catalog_snapshots
+{ "snapshotId": "…", "snapshotAt": ISODate("…"), "entity": "product", "entityId": "…",
+  "data": { /* FarmInfo or ProductInfo as Farms' gRPC API returns it, in protobuf's JSON mapping */ } }
+```
+
+- **Readings.** A time-series collection groups each sensor's readings into buckets and compresses them. It cannot
+  have a unique index, so the ingestor looks a reading up by `messageId` before inserting it. A reading without a
+  valid time of its own is placed at `receivedAt`, with `timestampSource` saying so.
+- **Personal data.** The account events lose `token` and `username`, and `email` becomes `emailHash`, an
+  HMAC-SHA256 of the address in lower case with the `Pseudonymization:Key` secret: the same address always gives
+  the same hash, so accounts can be counted, but the address cannot be recovered.
+- **Retention.** `Mongo:ReadingsRetention` (empty by default) lets MongoDB delete old readings by itself
+  (`expireAfterSeconds`) once Databricks has copied them.
+- **Simulated history.** The documents written by [the backfill script](../analytics/backfill/backfill.py) have
+  `"simulated": true`.

@@ -10,7 +10,7 @@ The web app (React, TypeScript and shadcn/ui) is in [web](web/README.md).
 ## Running with .NET Aspire
 
 For development, the Aspire AppHost starts every service as a project, with PostgreSQL (one database per
-service), RabbitMQ, Redis and Mailpit in containers, and opens the Aspire dashboard with their logs, distributed
+service), RabbitMQ, Redis, MongoDB and Mailpit in containers, and opens the Aspire dashboard with their logs, distributed
 traces and metrics:
 
 ```bash
@@ -27,7 +27,7 @@ dotnet run --project CropConnect.AppHost
 
 ## Running with Docker
 
-`compose.yaml` starts every service with PostgreSQL, RabbitMQ and Redis:
+`compose.yaml` starts every service with PostgreSQL, RabbitMQ, Redis and MongoDB:
 
 ```bash
 docker compose up -d --build
@@ -59,12 +59,14 @@ are also published on their own ports, on `127.0.0.1` only:
 | Orders | `localhost:5003` |
 | Sensors | `localhost:5004` |
 | Notifications | `localhost:5005` |
+| Analytics ingestor (health only, HTTP) | http://localhost:5006/health |
 
 | Infrastructure | Address |
 |---|---|
 | PostgreSQL | `localhost:5440` (one database per service) |
 | RabbitMQ (AMQP) | `localhost:5673` |
 | RabbitMQ management | http://localhost:15673 (`guest` / `guest`) |
+| MongoDB (analytics raw zone) | `mongodb://mongo:mongo@localhost:27018/?authSource=admin` |
 | Mailpit (notification emails) | http://localhost:8025 |
 | Aspire dashboard (logs, traces, metrics) | http://localhost:18888 |
 
@@ -74,7 +76,7 @@ are also published on their own ports, on `127.0.0.1` only:
   and ports.
 - Every service exports its logs, distributed traces and metrics over OTLP to the standalone Aspire
   dashboard, as under Aspire. It has no login, so Compose only publishes it on `127.0.0.1`.
-- Data is kept in the `postgres-data` and `rabbitmq-data` volumes; `docker compose down -v` removes it. Redis
+- Data is kept in the `postgres-data`, `rabbitmq-data` and `mongo-data` volumes; `docker compose down -v` removes it. Redis
   only holds the gateway's rate limit counters, which matter for the current window alone, so it has no volume
   and is not published.
 - Emails are caught by Mailpit: the notifications and the account emails (email verification, password reset,

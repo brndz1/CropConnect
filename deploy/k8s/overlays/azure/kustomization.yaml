@@ -23,6 +23,8 @@ images:
     newName: cropconnect16641.azurecr.io/sensors-service
   - name: cropconnect/notifications-service
     newName: cropconnect16641.azurecr.io/notifications-service
+  - name: cropconnect/analytics-ingestor
+    newName: cropconnect16641.azurecr.io/analytics-ingestor
   - name: cropconnect/api-gateway
     newName: cropconnect16641.azurecr.io/api-gateway
   - name: cropconnect/sensor-simulator

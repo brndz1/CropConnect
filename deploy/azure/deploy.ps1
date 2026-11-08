@@ -5,12 +5,13 @@
 
 # Random secrets on the first deploy, kept in secrets.env (ignored by git) for the next ones.
 $secretsFile = Join-Path $Overlay "secrets.env"
+function New-Secret([int] $length) {
+    $bytes = [byte[]]::new($length)
+    [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    return [Convert]::ToBase64String($bytes).Replace("+", "A").Replace("/", "B").Replace("=", "")
+}
+
 if (-not (Test-Path $secretsFile)) {
-    function New-Secret([int] $length) {
-        $bytes = [byte[]]::new($length)
-        [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
-        return [Convert]::ToBase64String($bytes).Replace("+", "A").Replace("/", "B").Replace("=", "")
-    }
     @(
         "POSTGRES_USER=cropconnect"
         "POSTGRES_PASSWORD=$(New-Secret 24)"
@@ -22,6 +23,16 @@ if (-not (Test-Path $secretsFile)) {
         "ADMIN_PASSWORD=Admin-$(New-Secret 12)"
     ) | Set-Content -Path $secretsFile -Encoding ascii
     Write-Host "Generated $secretsFile (keep it: it holds the admin password)."
+}
+
+# MongoDB and the analytics ingestor came later: their secrets are added to an existing secrets.env.
+if (-not (Select-String -Path $secretsFile -Pattern "^MONGO_PASSWORD=" -Quiet)) {
+    @(
+        "MONGO_USER=cropconnect"
+        "MONGO_PASSWORD=$(New-Secret 24)"
+        "PSEUDONYMIZATION_KEY=$(New-Secret 32)"
+    ) | Add-Content -Path $secretsFile -Encoding ascii
+    Write-Host "Added the MongoDB and pseudonymisation secrets to $secretsFile."
 }
 
 # The RS256 key pair of the JWTs, added once (also to a secrets.env from before the switch from HS256).

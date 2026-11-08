@@ -1,4 +1,4 @@
-# Local environment with every service, PostgreSQL and RabbitMQ:
+# Local environment with every service, PostgreSQL, RabbitMQ and MongoDB:
 #   docker compose up -d --build
 # The defaults are for development only; override them in a .env file (see .env.example).
 # Only the API gateway is reachable from other machines; the services and the infrastructure are published on
@@ -59,6 +59,31 @@ services:
       interval: 10s
       timeout: 10s
       retries: 10
+
+  # The raw zone of the analytics platform: the analytics ingestor stores every reading and event here.
+  # Published on 27018, so it does not clash with a MongoDB already running on the default port.
+  # 7.0, not 8.x: MongoDB 8's memory allocator crashes on Linux kernels 6.19 and newer (SERVER-121912), which the
+  # CI runners use; 7.0 has everything the ingestor needs (time-series collections, expireAfterSeconds).
+  mongodb:
+    image: mongo:7.0
+    restart: unless-stopped
+    networks: [cropconnect]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-mongo}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mongo}
+    ports:
+      - "127.0.0.1:${MONGO_PORT:-27018}:27017"
+    volumes:
+      - mongo-data:/data/db
+    # mongosh is a Node.js program that can take several seconds just to start on a busy machine (the CI runner
+    # while every service boots), and the first start also runs the image's init step and restarts mongod.
+    healthcheck:
+      test: ["CMD", "mongosh", "--norc", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 30s
+      retries: 10
+      start_period: 120s
+      start_interval: 3s
 
   auth-service:
     <<: *service
@@ -218,6 +243,33 @@ services:
       mailpit:
         condition: service_started
 
+  # Copies every reading and domain event, and a daily snapshot of the catalog, to MongoDB for the analytics.
+  analytics-ingestor:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Services/Analytics.Ingestor/Dockerfile
+    image: cropconnect/analytics-ingestor
+    ports:
+      - "127.0.0.1:5006:8080"
+    environment:
+      <<: *telemetry
+      OTEL_SERVICE_NAME: analytics-ingestor
+      ConnectionStrings__AnalyticsDb: mongodb://${MONGO_USER:-mongo}:${MONGO_PASSWORD:-mongo}@mongodb:27017/?authSource=admin
+      Pseudonymization__Key: ${PSEUDONYMIZATION_KEY:-dev-pseudonymization-key-change-me-0123456789}
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: "5672"
+      RabbitMq__UserName: ${RABBITMQ_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:-guest}
+      CatalogSnapshots__FarmsServiceUrl: http://farms-service:8080
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      farms-service:
+        condition: service_healthy
+
   # The only REST entry point for clients; it translates each call to gRPC on the services above.
   api-gateway:
     <<: *service
@@ -326,3 +378,4 @@ networks:
 volumes:
   postgres-data:
   rabbitmq-data:
+  mongo-data:

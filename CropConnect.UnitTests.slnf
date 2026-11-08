@@ -9,12 +9,14 @@
       "tests/Sensors.Service.Tests/Sensors.Service.Tests.csproj",
       "tests/Notifications.Service.Tests/Notifications.Service.Tests.csproj",
       "tests/CropConnect.ApiGateway.Tests/CropConnect.ApiGateway.Tests.csproj",
+      "tests/Analytics.Ingestor.Tests/Analytics.Ingestor.Tests.csproj",
       "Services/Auth.Service/Auth.Service.csproj",
       "Services/Users.Service/Users.Service.csproj",
       "Services/Farms.Service/Farms.Service.csproj",
       "Services/Orders.Service/Orders.Service.csproj",
       "Services/Sensors.Service/Sensors.Service.csproj",
       "Services/Notifications.Service/Notifications.Service.csproj",
+      "Services/Analytics.Ingestor/Analytics.Ingestor.csproj",
       "CropConnect.ApiGateway/CropConnect.ApiGateway.csproj",
       "CropConnect.ServiceDefaults/CropConnect.ServiceDefaults.csproj"
     ]

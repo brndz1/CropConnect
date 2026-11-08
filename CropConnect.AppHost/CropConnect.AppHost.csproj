@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.MongoDB" Version="13.5.4" />
     <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.5.4" />
     <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.5.4" />
     <PackageReference Include="Aspire.Hosting.Redis" Version="13.5.4" />
@@ -25,6 +26,7 @@
     <ProjectReference Include="..\Services\Orders.Service\Orders.Service.csproj" />
     <ProjectReference Include="..\Services\Sensors.Service\Sensors.Service.csproj" />
     <ProjectReference Include="..\Services\Notifications.Service\Notifications.Service.csproj" />
+    <ProjectReference Include="..\Services\Analytics.Ingestor\Analytics.Ingestor.csproj" />
   </ItemGroup>
 
 </Project>

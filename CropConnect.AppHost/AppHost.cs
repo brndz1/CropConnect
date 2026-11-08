@@ -26,6 +26,13 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq", rabbitUser, rabbitPassword)
 // The gateway's rate limit counters, shared by its replicas.
 var redis = builder.AddRedis("redis");
 
+// The raw zone of the analytics platform: every reading and event, as the analytics ingestor received it.
+// 7.0, as in compose.yaml: MongoDB 8 does not start on Linux kernels 6.19 and newer (SERVER-121912).
+var analyticsDb = builder.AddMongoDB("mongodb")
+    .WithImageTag("7.0")
+    .WithDataVolume("cropconnect-aspire-mongodb")
+    .AddDatabase("AnalyticsDb", "cropconnect_raw");
+
 // Catches the notification emails; its web inbox is linked from the dashboard.
 var mailpit = builder.AddContainer("mailpit", "axllent/mailpit", "v1.27")
     .WithHttpEndpoint(targetPort: 8025, name: "http");
@@ -68,6 +75,14 @@ var notifications = builder.AddProject<Projects.Notifications_Service>("notifica
     .WithEnvironment("Email__Provider", "Mailpit")
     .WithEnvironment("Email__Mailpit__BaseUrl", mailpit.GetEndpoint("http"))
     .WaitFor(mailpit);
+
+// Its pseudonymisation key comes from appsettings.Development.json.
+builder.AddProject<Projects.Analytics_Ingestor>("analytics-ingestor")
+    .WithReference(analyticsDb)
+    .WaitFor(analyticsDb)
+    .WithRabbitMq(rabbitmq, rabbitUser, rabbitPassword)
+    .WithEnvironment("CatalogSnapshots__FarmsServiceUrl", farms.GetEndpoint("http"))
+    .WaitFor(farms);
 
 #endregion
 

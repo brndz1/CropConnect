@@ -17,6 +17,10 @@ flowchart LR
     ex --> nq[(notifications-service.events)]
     nq --> notif[Notifications.Service]
     nq -. rejected .-> ndlx[/notifications-service.events.dead-letter<br/>fanout/] --> ndlq[(notifications-service.events.dead-letter)]
+
+    ex -- "#" --> aeq[(analytics-ingestor.events)]
+    rx -- "farm.#" --> arq[(analytics-ingestor.readings)]
+    aeq & arq --> ingestor[Analytics.Ingestor] --> mongo[(MongoDB)]
 ```
 
 ## Exchanges and queues
@@ -29,6 +33,9 @@ flowchart LR
 | `cropconnect.events` | topic exchange | Orders, Sensors, Auth, Notifications | Domain events |
 | `notifications-service.events` | queue | Notifications | Bound with the twelve routing keys below; dead-letters to `notifications-service.events.dead-letter` |
 | `notifications-service.events.dead-letter` | fanout exchange | Notifications | → queue of the same name |
+| `analytics-ingestor.readings` | queue | Analytics ingestor | Bound to `sensors.readings` with `farm.#`: a copy of every reading |
+| `analytics-ingestor.events` | queue | Analytics ingestor | Bound to `cropconnect.events` with `#`: a copy of every event, including future ones |
+| `analytics-ingestor.dead-letter` | fanout exchange | Analytics ingestor | → queue of the same name; messages that are not JSON or have no ID |
 
 ## Messages
 
@@ -67,7 +74,10 @@ the W3C `traceparent` header carries the trace of the request that caused the ev
 ```json
 // order.created
 { "orderId": "…", "customerId": "…", "farmId": "…", "farmOwnerId": "…",
-  "totalAmount": 12.5, "itemCount": 2, "occurredAt": "2026-10-30T10:00:00Z" }
+  "totalAmount": 12.5, "itemCount": 2,
+  "items": [ { "productId": "…", "productName": "Alface", "quantity": 5, "unitPrice": 1.5 },
+             { "productId": "…", "productName": "Cenoura", "quantity": 1, "unitPrice": 5.0 } ],
+  "occurredAt": "2026-10-30T10:00:00Z" }
 
 // order.status.changed (status: pending | confirmed | readyForPickup | pickedUp | cancelled)
 { "orderId": "…", "customerId": "…", "farmId": "…", "farmOwnerId": "…",
@@ -123,7 +133,8 @@ and Auth stores just its SHA-256.
   confirms and `mandatory` set, so an event is never lost: if the broker is down, or no queue is bound yet, it stays
   in the outbox (`LastError` says why) and is retried every 2 seconds, in order.
 - **Consumers** acknowledge manually, at least once. They are idempotent: Sensors by the reading's `messageId`,
-  Notifications by the event's `MessageId` together with the recipient.
+  Notifications by the event's `MessageId` together with the recipient, the analytics ingestor by the reading's
+  `messageId` and the event's `MessageId` (the `_id` of its document).
 - **Invalid messages** (bad JSON, unknown farm, inactive farm, unsupported routing key) are rejected straight to
   the dead-letter queue.
 - **Other failures** (a database or a dependency down) are retried: the message is republished to the back of its

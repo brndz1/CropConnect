@@ -9,5 +9,6 @@ The technical documents that go with the project report, describing the system a
 | [Messaging](messaging.md) | RabbitMQ exchanges, queues, routing keys and the payload of every event |
 | [gRPC contracts](grpc.md) | The internal services, their RPCs and who may call them |
 | [REST API](api.md) | The gateway's endpoints, roles, errors and the [OpenAPI document](openapi.json) |
+| [Analytics platform](analytics.md) | The raw zone in MongoDB that the analytics ingestor fills, and the simulated history |
 
 How to run the system and its tests is in the [repository README](../README.md).

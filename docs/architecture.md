@@ -2,6 +2,7 @@
 
 CropConnect is a set of .NET 10 microservices. Clients only talk REST to the API gateway; the services talk gRPC to
 each other and exchange events through RabbitMQ. Each service owns its PostgreSQL database (section 6.5.4 of the report).
+The analytics ingestor copies every reading and event to MongoDB, the raw zone of the [analytics platform](analytics.md).
 
 ```mermaid
 flowchart LR
@@ -14,6 +15,7 @@ flowchart LR
         orders[Orders.Service]
         sensors[Sensors.Service]
         notif[Notifications.Service]
+        ingestor[Analytics.Ingestor]
     end
 
     gw -- gRPC --> auth & users & farms & orders & sensors & notif
@@ -29,6 +31,8 @@ flowchart LR
     sensors -- "AMQP: alert events" --> mq
     auth -- "AMQP: account events" --> mq
     mq --> notif
+    mq -- "copy of every reading and event" --> ingestor
+    ingestor -- "gRPC: daily catalog snapshot" --> farms
 
     sensors -- HTTPS --> meteo([Open-Meteo])
     notif -- "HTTP / SMTP" --> mail([Mailpit / Brevo])
@@ -39,6 +43,7 @@ flowchart LR
     orders --- ordersdb[(orders_db)]
     sensors --- sensorsdb[(sensors_db)]
     notif --- notifdb[(notifications_db)]
+    ingestor --- rawdb[(MongoDB<br/>cropconnect_raw)]
 ```
 
 ## Services
@@ -51,6 +56,7 @@ flowchart LR
 | Orders.Service | Order life cycle and reviews; orchestrates the stock reservation | RF10-RF15 |
 | Sensors.Service | Readings, global thresholds, alerts with the rain forecast | RF04, RF16-RF18 |
 | Notifications.Service | Turns events into in-app notifications and emails | RF19-RF21 |
+| Analytics.Ingestor | Stores every reading and domain event as it arrived, and a daily snapshot of the public catalog, in MongoDB for the analytics platform ([analytics](analytics.md)) | Analytics |
 | API Gateway | The only REST entry point: JWT validation, rate limiting, routing to gRPC, OpenAPI | RNF04 |
 | Web app | React front end for the three profiles, served by nginx, which forwards `/api` to the gateway ([web](../web/README.md)) | All the profiles' screens |
 
@@ -69,7 +75,8 @@ flowchart LR
   claim). Calls between services (stock reservation, farm and user lookups) use a shared internal API key in the
   `x-api-key` header instead, and those RPCs accept nothing else.
 - **Events (RabbitMQ).** Order, review, alert and account events go to the `cropconnect.events` topic exchange; Node-RED publishes
-  readings to `sensors.readings`. See [Messaging](messaging.md).
+  readings to `sensors.readings`. The analytics ingestor has its own queue on each exchange, so it gets a copy of
+  everything without taking messages from Sensors or Notifications. See [Messaging](messaging.md).
 
 ## Main flows
 
