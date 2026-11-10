@@ -37,6 +37,7 @@ export function useProduct(productId: string) {
   return useQuery({
     queryKey: queryKeys.product(productId),
     queryFn: () => call(client.GET("/api/products/{id}", { params: { path: { id: productId } } })),
+    enabled: Boolean(productId),
   })
 }
 
