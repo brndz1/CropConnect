@@ -1,0 +1,21 @@
+// Query keys of the server state, so screens and mutations refer to the same cache entries.
+export const queryKeys = {
+  products: (filters: object = {}) => ["products", filters] as const,
+  product: (id: string) => ["product", id] as const,
+  farms: (filters: object = {}) => ["farms", filters] as const,
+  myFarms: () => ["farms", "mine"] as const,
+  farm: (id: string) => ["farm", id] as const,
+  farmReviews: (farmId: string) => ["farm", farmId, "reviews"] as const,
+  myOrders: () => ["orders", "mine"] as const,
+  farmOrders: (filters: object = {}) => ["orders", "farm", filters] as const,
+  order: (id: string) => ["order", id] as const,
+  orderReview: (orderId: string) => ["order", orderId, "review"] as const,
+  notifications: () => ["notifications"] as const,
+  profile: (userId: string) => ["profile", userId] as const,
+  user: (userId: string) => ["user", userId] as const,
+  users: (filters: object = {}) => ["users", filters] as const,
+  thresholds: () => ["thresholds"] as const,
+  latestReadings: (farmId: string) => ["sensors", farmId, "latest"] as const,
+  readings: (farmId: string, filters: object = {}) => ["sensors", farmId, "readings", filters] as const,
+  alerts: (farmId: string, filters: object = {}) => ["sensors", farmId, "alerts", filters] as const,
+}

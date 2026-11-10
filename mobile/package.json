@@ -54,7 +54,8 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm test"
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test",
+    "seed:demo": "node scripts/seed-demo.mjs"
   },
   "private": true,
   "jest": {
@@ -73,6 +74,9 @@
       "src/**/*.{ts,tsx}",
       "!src/api/schema.d.ts",
       "!src/components/illustrations.ts"
+    ],
+    "setupFiles": [
+      "<rootDir>/jest.setup.js"
     ]
   }
 }

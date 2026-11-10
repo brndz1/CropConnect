@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from "rea
 import { colors, fonts, radii, sizes, spacing } from "@/theme/tokens"
 import { AppText } from "./AppText"
 import { Icon, type IconName } from "./Icon"
+import { noFocusOutline } from "./webStyles"
 
 interface TextFieldProps extends Omit<TextInputProps, "style"> {
   label: string
@@ -47,7 +48,7 @@ export function TextField({
         {icon ? <Icon name={icon} color="textSecondary" /> : null}
         <TextInput
           ref={ref}
-          style={styles.input}
+          style={[styles.input, noFocusOutline]}
           placeholderTextColor={colors.textSecondary}
           editable={editable}
           secureTextEntry={secure && hidden}
