@@ -7,6 +7,7 @@ import * as ExpoSplashScreen from "expo-splash-screen"
 import { StatusBar } from "expo-status-bar"
 import { useEffect, useState } from "react"
 import { SafeAreaProvider } from "react-native-safe-area-context"
+import { AuthProvider } from "@/auth/AuthProvider"
 import { SnackbarProvider } from "@/components/Snackbar"
 import { RootNavigator } from "@/navigation/RootNavigator"
 import { colors, fonts } from "@/theme/tokens"
@@ -54,12 +55,14 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <SnackbarProvider>
-          <NavigationContainer theme={navigationTheme}>
-            <StatusBar style="dark" />
-            <RootNavigator />
-          </NavigationContainer>
-        </SnackbarProvider>
+        <AuthProvider>
+          <SnackbarProvider>
+            <NavigationContainer theme={navigationTheme}>
+              <StatusBar style="dark" />
+              <RootNavigator />
+            </NavigationContainer>
+          </SnackbarProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   )
