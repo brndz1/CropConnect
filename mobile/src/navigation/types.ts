@@ -1,4 +1,6 @@
-import type { NavigatorScreenParams } from "@react-navigation/native"
+import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs"
+import type { CompositeScreenProps, NavigatorScreenParams } from "@react-navigation/native"
+import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 import type { SensorType } from "@/api/types"
 
 // Navigation of each profile (site map, figure 1): four bottom destinations and screens stacked on top of them.
@@ -67,3 +69,21 @@ export type AdminStackParamList = {
   AdminFarm: { farmId: string }
   ChangePassword: undefined
 }
+
+export type ClientScreenProps<T extends keyof ClientStackParamList> = NativeStackScreenProps<ClientStackParamList, T>
+export type ClientTabProps<T extends keyof ClientTabParamList> = CompositeScreenProps<
+  BottomTabScreenProps<ClientTabParamList, T>,
+  NativeStackScreenProps<ClientStackParamList>
+>
+
+export type ManagerScreenProps<T extends keyof ManagerStackParamList> = NativeStackScreenProps<ManagerStackParamList, T>
+export type ManagerTabProps<T extends keyof ManagerTabParamList> = CompositeScreenProps<
+  BottomTabScreenProps<ManagerTabParamList, T>,
+  NativeStackScreenProps<ManagerStackParamList>
+>
+
+export type AdminScreenProps<T extends keyof AdminStackParamList> = NativeStackScreenProps<AdminStackParamList, T>
+export type AdminTabProps<T extends keyof AdminTabParamList> = CompositeScreenProps<
+  BottomTabScreenProps<AdminTabParamList, T>,
+  NativeStackScreenProps<AdminStackParamList>
+>
