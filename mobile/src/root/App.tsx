@@ -57,7 +57,12 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <SnackbarProvider>
-            <NavigationContainer theme={navigationTheme}>
+            <NavigationContainer
+              theme={navigationTheme}
+              documentTitle={{
+                formatter: (options) => (options?.title ? `${options.title} · CropConnect` : "CropConnect"),
+              }}
+            >
               <StatusBar style="dark" />
               <RootNavigator />
             </NavigationContainer>
