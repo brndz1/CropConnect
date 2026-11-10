@@ -73,6 +73,9 @@
       "src/**/*.{ts,tsx}",
       "!src/api/schema.d.ts",
       "!src/components/illustrations.ts"
+    ],
+    "setupFiles": [
+      "<rootDir>/jest.setup.js"
     ]
   }
 }
