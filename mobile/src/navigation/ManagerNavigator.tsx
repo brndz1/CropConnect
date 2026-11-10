@@ -10,11 +10,13 @@ import { MyFarmScreen } from "@/features/manager/MyFarmScreen"
 import { PickupSchedulesScreen } from "@/features/manager/PickupSchedulesScreen"
 import { ProductFormScreen } from "@/features/manager/ProductFormScreen"
 import { ProductsScreen } from "@/features/manager/ProductsScreen"
+import { NotificationsScreen } from "@/features/notifications/NotificationsScreen"
+import { useNotificationToasts } from "@/features/notifications/useNotificationToasts"
 import { useFarmOrders } from "@/features/orders/queries"
+import { ChangePasswordScreen } from "@/features/profile/ChangePasswordScreen"
 import { AlertScreen } from "@/features/sensors/AlertScreen"
 import { SensorHistoryScreen } from "@/features/sensors/SensorHistoryScreen"
 import { SensorsScreen } from "@/features/sensors/SensorsScreen"
-import { PlaceholderScreen } from "./PlaceholderScreen"
 import { createTabBar, type TabMeta } from "./TabBar"
 import type { ManagerStackParamList, ManagerTabParamList } from "./types"
 
@@ -29,6 +31,7 @@ const tabs: Record<keyof ManagerTabParamList, TabMeta> = {
 }
 
 function ManagerTabs() {
+  useNotificationToasts()
   // Counter of new orders waiting for confirmation on Encomendas (G01).
   const pending = useFarmOrders("Pending").data?.length ?? 0
   const TabBar = useMemo(
@@ -61,8 +64,8 @@ export function ManagerNavigator() {
       <Stack.Screen name="MyFarm" component={MyFarmScreen} />
       <Stack.Screen name="FarmForm" component={FarmFormScreen} />
       <Stack.Screen name="PickupSchedules" component={PickupSchedulesScreen} />
-      <Stack.Screen name="ChangePassword" component={PlaceholderScreen} />
-      <Stack.Screen name="Notifications" component={PlaceholderScreen} />
+      <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
     </Stack.Navigator>
   )
 }

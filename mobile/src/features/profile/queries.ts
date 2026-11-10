@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { call, client } from "@/api/client"
 import { isApiError } from "@/api/errors"
 import { queryKeys } from "@/api/queryKeys"
@@ -26,4 +26,25 @@ export function useMyProfile() {
 export function displayName(profile: Profile | null | undefined, email: string) {
   const name = profile ? `${profile.firstName} ${profile.lastName}`.trim() : ""
   return name || email.split("@")[0] || email
+}
+
+// Creates the profile the first time and replaces it afterwards (C15).
+export function useSaveProfile() {
+  const { userId } = useSession()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      exists,
+      body,
+    }: {
+      exists: boolean
+      body: { firstName: string; lastName: string; phoneNumber: string }
+    }) =>
+      call(
+        exists
+          ? client.PUT("/api/users/{id}/profile", { params: { path: { id: userId } }, body })
+          : client.POST("/api/users/{id}/profile", { params: { path: { id: userId } }, body }),
+      ),
+    onSuccess: (profile) => queryClient.setQueryData(queryKeys.profile(userId), profile),
+  })
 }
