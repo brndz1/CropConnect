@@ -5,7 +5,8 @@
 CropConnect - Agricultural Management &amp; Marketplace Platform
 
 The architecture, data model, RabbitMQ events, gRPC contracts and REST API are described in [docs](docs/README.md).
-The web app (React, TypeScript and shadcn/ui) is in [web](web/README.md).
+The web app (React, TypeScript and shadcn/ui) is in [web](web/README.md), and the mobile app (Expo, React Native and
+TypeScript) for the three profiles is in [mobile](mobile/README.md).
 
 ## Running with .NET Aspire
 
@@ -33,7 +34,8 @@ dotnet run --project CropConnect.AppHost
 docker compose up -d --build
 ```
 
-Clients use the web app, or the REST API of the gateway, which translates each call to gRPC on the owning service:
+Clients use the web app, the [mobile app](mobile/README.md), or the REST API of the gateway, which translates each call
+to gRPC on the owning service:
 
 | Entry point | Address |
 |---|---|

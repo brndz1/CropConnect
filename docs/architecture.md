@@ -59,6 +59,7 @@ flowchart LR
 | Analytics.Ingestor | Stores every reading and domain event as it arrived, and a daily snapshot of the public catalog, in MongoDB for the analytics platform ([analytics](analytics.md)) | Analytics |
 | API Gateway | The only REST entry point: JWT validation, rate limiting, routing to gRPC, OpenAPI | RNF04 |
 | Web app | React front end for the three profiles, served by nginx, which forwards `/api` to the gateway ([web](../web/README.md)) | All the profiles' screens |
+| Mobile app | Expo / React Native app for the three profiles, built from the UI/UX prototype, calling the gateway's REST API ([mobile](../mobile/README.md)) | All the profiles' screens |
 
 ## Communication
 
