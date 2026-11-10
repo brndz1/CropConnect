@@ -56,7 +56,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test",
-    "seed:demo": "node scripts/seed-demo.mjs"
+    "seed:demo": "node scripts/seed-demo.mjs",
+    "export:web": "expo export --platform web"
   },
   "private": true,
   "jest": {
@@ -79,5 +80,10 @@
     "setupFiles": [
       "<rootDir>/jest.setup.js"
     ]
+  },
+  "overrides": {
+    "openapi-typescript": {
+      "typescript": "$typescript"
+    }
   }
 }
