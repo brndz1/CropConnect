@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "CropConnect",
+    "slug": "cropconnect",
+    "scheme": "cropconnect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/emblema_256.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "pt.cropconnect.app"
+    },
+    "android": {
+      "package": "pt.cropconnect.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/emblema_256.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/logo_branco_480.png",
+          "imageWidth": 200,
+          "backgroundColor": "#16722F"
+        }
+      ]
+    ]
+  }
+}
