@@ -1,9 +1,15 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { useMemo } from "react"
+import { BasketFormScreen } from "@/features/manager/BasketFormScreen"
 import { DashboardScreen } from "@/features/manager/DashboardScreen"
+import { FarmFormScreen } from "@/features/manager/FarmFormScreen"
 import { ManagerOrderDetailScreen } from "@/features/manager/ManagerOrderDetailScreen"
 import { ManagerOrdersScreen } from "@/features/manager/ManagerOrdersScreen"
+import { MyFarmScreen } from "@/features/manager/MyFarmScreen"
+import { PickupSchedulesScreen } from "@/features/manager/PickupSchedulesScreen"
+import { ProductFormScreen } from "@/features/manager/ProductFormScreen"
+import { ProductsScreen } from "@/features/manager/ProductsScreen"
 import { useFarmOrders } from "@/features/orders/queries"
 import { AlertScreen } from "@/features/sensors/AlertScreen"
 import { SensorHistoryScreen } from "@/features/sensors/SensorHistoryScreen"
@@ -36,7 +42,7 @@ function ManagerTabs() {
     <Tabs.Navigator screenOptions={{ headerShown: false }} tabBar={(props) => <TabBar {...props} />}>
       <Tabs.Screen name="Dashboard" component={DashboardScreen} />
       <Tabs.Screen name="ManagerOrders" component={ManagerOrdersScreen} />
-      <Tabs.Screen name="Products" component={PlaceholderScreen} />
+      <Tabs.Screen name="Products" component={ProductsScreen} />
       <Tabs.Screen name="Sensors" component={SensorsScreen} />
     </Tabs.Navigator>
   )
@@ -50,8 +56,12 @@ export function ManagerNavigator() {
       <Stack.Screen name="ManagerOrder" component={ManagerOrderDetailScreen} />
       <Stack.Screen name="Alert" component={AlertScreen} />
       <Stack.Screen name="SensorHistory" component={SensorHistoryScreen} />
-      <Stack.Screen name="MyFarm" component={PlaceholderScreen} />
-      <Stack.Screen name="FarmForm" component={PlaceholderScreen} />
+      <Stack.Screen name="ProductForm" component={ProductFormScreen} />
+      <Stack.Screen name="BasketForm" component={BasketFormScreen} />
+      <Stack.Screen name="MyFarm" component={MyFarmScreen} />
+      <Stack.Screen name="FarmForm" component={FarmFormScreen} />
+      <Stack.Screen name="PickupSchedules" component={PickupSchedulesScreen} />
+      <Stack.Screen name="ChangePassword" component={PlaceholderScreen} />
       <Stack.Screen name="Notifications" component={PlaceholderScreen} />
     </Stack.Navigator>
   )
