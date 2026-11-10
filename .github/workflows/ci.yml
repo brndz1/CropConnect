@@ -67,6 +67,45 @@ jobs:
       - name: Type-check and build
         run: npm run build
 
+  mobile:
+    name: Mobile app
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install the dependencies
+        run: npm ci
+
+      # The API client is typed from docs/openapi.json; a change to the API must regenerate it.
+      - name: Check the API types are up to date
+        run: |
+          npm run generate:api
+          git diff --exit-code -- src/api/schema.d.ts
+
+      - name: Check the formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Run the unit tests
+        run: npm test -- --ci
+
+      - name: Bundle the app for the web
+        run: npm run export:web
+
   end-to-end:
     name: End-to-end tests
     runs-on: ubuntu-latest
