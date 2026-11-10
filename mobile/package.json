@@ -80,5 +80,10 @@
     "setupFiles": [
       "<rootDir>/jest.setup.js"
     ]
+  },
+  "overrides": {
+    "openapi-typescript": {
+      "typescript": "$typescript"
+    }
   }
 }
