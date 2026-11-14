@@ -6,7 +6,9 @@ CropConnect - Agricultural Management &amp; Marketplace Platform
 
 The architecture, data model, RabbitMQ events, gRPC contracts and REST API are described in [docs](docs/README.md).
 The web app (React, TypeScript and shadcn/ui) is in [web](web/README.md), and the mobile app (Expo, React Native and
-TypeScript) for the three profiles is in [mobile](mobile/README.md).
+TypeScript) for the three profiles is in [mobile](mobile/README.md). The analytics platform (the simulated history for
+the MongoDB raw zone and the Databricks notebooks of the lakehouse) is in [analytics](analytics), described in
+[docs/analytics.md](docs/analytics.md).
 
 ## Running with .NET Aspire
 

@@ -16,8 +16,10 @@ flowchart LR
     ingestor --> mongo[(MongoDB<br/>cropconnect_raw)]
     backfill([backfill.py<br/>simulated history]) -.-> mongo
     mongo -- mongodump / mongorestore --> atlas[(MongoDB Atlas)]
-    atlas -- PyMongo --> bronze[Bronze] --> silver[Silver] --> gold[Gold] --> dashboard([AI/BI dashboard])
+    atlas -- PyMongo --> landing[/Landing<br/>JSON files in a volume/]
+    landing -- Auto Loader + MERGE INTO --> bronze[Bronze] --> silver[Silver] --> gold[Gold] --> dashboard([AI/BI dashboard])
     subgraph databricks [Databricks]
+        landing
         bronze
         silver
         gold
@@ -56,35 +58,56 @@ python analytics/backfill/backfill.py --replace
 
 By default it writes 6 months for 24 farms (about 725,000 readings, 76,000 events and 32,000 snapshot documents);
 `--help` lists the options. `--replace` deletes the simulated documents first, and the same `--seed` gives the same
-history.
+history. The Databricks platform was built on `--replace --months 3 --farms 12` (about 213,000 readings), which fits
+the 512 MB of a free Atlas cluster.
+
+The backfill writes to MongoDB directly, not through RabbitMQ and the ingestor: it writes months of past events, which
+the ingestor would stamp with the time they arrived. Its documents have the same shape as the ingestor's, so the
+lakehouse treats both alike, and `simulated` tells them apart in every layer.
 
 ## Lakehouse (Databricks)
 
 The notebooks in [analytics/databricks](../analytics/databricks) build a medallion lakehouse of Delta tables in
 Unity Catalog (catalog `cropconnect`, one schema per layer). Databricks runs in the cloud and cannot reach the local
-MongoDB, so the raw zone is copied to a MongoDB Atlas cluster with `mongodump`/`mongorestore`, and Bronze reads it
-from there.
+MongoDB, so the raw zone is copied to a MongoDB Atlas cluster with `mongodump`/`mongorestore`, and the landing reads it
+from there. The copy holds the simulated history and the real documents the ingestor had stored by then; for the
+lakehouse to follow the platform live, the ingestor would write to a MongoDB that Databricks can reach.
 
 | Notebook | Layer | Writes |
 |---|---|---|
-| [01_bronze.py](../analytics/databricks/01_bronze.py) | Bronze | One table per collection, each document kept whole as Extended JSON. **Incremental.** |
+| [00_landing.py](../analytics/databricks/00_landing.py) | Landing | The new MongoDB documents as JSON files in the volume `landing.raw`, one folder per collection. |
+| [01_bronze.py](../analytics/databricks/01_bronze.py) | Bronze | One table per collection, each document kept whole as Extended JSON. **Auto Loader + `MERGE INTO`.** |
 | [02_silver.py](../analytics/databricks/02_silver.py) | Silver | Typed tables per business concept, invalid readings in quarantine. Readings **incremental**, the rest rebuilt. |
 | [03_gold.py](../analytics/databricks/03_gold.py) | Gold | Aggregates for the dashboard and a star schema of the sales. Rebuilt on every run. |
 
-A job runs the three in order (Silver only after Bronze succeeds, Gold only after Silver), and the AI/BI dashboard
-reads only Gold.
+A job runs the four in order (each task only after the previous one succeeds), and the AI/BI dashboard reads only
+Gold.
 
 ### Incremental writes
 
-- **Bronze** keeps a watermark per collection (`receivedAt` or `snapshotAt`) in `bronze._ingestion_state` and asks
-  MongoDB only for newer documents (`$gte`). Rows are `MERGE`d on the document id, so reading one again changes
-  nothing. The watermark moves only once a collection was read to the end. Documents are read unsorted: sorting a
-  time-series collection by a field other than its time field goes over the 32 MB sort limit of a free Atlas cluster.
+- **Landing.** Auto Loader ingests files and the raw zone is a database, so the landing turns the new documents into
+  files. It keeps a watermark per collection (`receivedAt` or `snapshotAt`) in `landing._extract_state`, asks MongoDB
+  only for newer documents (`$gte`) and writes them as JSON lines, already in the shape of a Bronze row. The watermark
+  moves only once a collection was read to the end. Documents are read unsorted: sorting a time-series collection by
+  a field other than its time field goes over the 32 MB sort limit of a free Atlas cluster. The files are kept, so the
+  landing is also an archive Bronze can be rebuilt from.
+- **Bronze** reads the landing folders with **Auto Loader** (`cloudFiles`, with the schema given rather than
+  inferred), which keeps the files it already processed in a checkpoint in the `landing.checkpoints` volume. It runs
+  with `trigger(availableNow=True)`: every new file is processed and the stream stops, which is how a scheduled job
+  uses it. Each micro-batch is written with **`MERGE INTO`** on the document id, so a document read twice (the
+  landing reads the last millisecond again) is never duplicated. Each row records its `_source_file`.
 - **Silver** does the same for the sensor readings, with the Bronze `_ingested_at` as the watermark
-  (`silver._processing_state`) and a `MERGE` on `reading_id`. The `full_refresh` widget rebuilds them, for example
-  after a quality rule changes. The other Silver tables are small and rebuilt on every run.
-- **A dropped table comes back.** If a Bronze or Silver incremental table does not exist, its watermark is ignored and
-  everything is read again (the `MERGE` keeps it free of duplicates). Every other table is rebuilt on the next run.
+  (`silver._processing_state`) and a `MERGE INTO` on `reading_id`. The `full_refresh` widget rebuilds them, for
+  example after a quality rule changes. The other Silver tables are small and rebuilt on every run.
+
+### Dropped tables and files
+
+| Dropped | What the next run does |
+|---|---|
+| A Bronze table | Its Auto Loader checkpoint is deleted too, so every landing file is read again. |
+| A landing folder, or `landing._extract_state` | The collection is extracted again from MongoDB; Bronze's `MERGE INTO` skips what it has. |
+| `silver.sensor_readings` or `silver.sensor_readings_rejected` | The watermark is ignored and every Bronze reading is processed again. |
+| Any other Silver or Gold table | It is rebuilt. |
 
 ### Star schema
 
@@ -95,7 +118,8 @@ table too, an accumulating snapshot with one date column per step of the order.
 
 ### Running it in Databricks
 
-1. Import the three notebooks into the workspace.
+1. Import the four notebooks into the workspace.
 2. Store the Atlas connection string as the secret `cropconnect`/`mongo-uri` (or fill the `mongo_uri` widget of
-   `01_bronze` for a one-off run). It never goes into the code.
-3. Create a job with the three notebooks as dependent tasks, on serverless compute.
+   `00_landing` for a one-off run). It never goes into the code.
+3. Create a job with the four notebooks as dependent tasks (landing, bronze, silver, gold), on serverless compute.
+   The landing creates the `landing` schema and its two volumes on its first run.
