@@ -2,7 +2,8 @@
 
 CropConnect is a set of .NET 10 microservices. Clients only talk REST to the API gateway; the services talk gRPC to
 each other and exchange events through RabbitMQ. Each service owns its PostgreSQL database (section 6.5.4 of the report).
-The analytics ingestor copies every reading and event to MongoDB, the raw zone of the [analytics platform](analytics.md).
+The analytics ingestor copies every reading and event to MongoDB, the raw zone of the [analytics platform](analytics.md),
+from which a Databricks lakehouse builds the tables the analytics dashboard reads.
 
 ```mermaid
 flowchart LR
